@@ -1,0 +1,124 @@
+{
+  "nodes": [
+    {
+      "module_id": "aes_sbox",
+      "depends_on": [],
+      "top_module": "aes_sbox",
+      "rtl_files": [
+        "rtl/aes_sbox.v"
+      ],
+      "tb_file": "tb/aes_sbox_tb.cpp",
+      "language": "verilog",
+      "build_output_dir": "reports/l0/aes_sbox/obj_dir",
+      "sim_output_dir": "reports/l1/aes_sbox",
+      "l2_policy": "skip",
+      "criticality": "medium",
+      "integration_role": "leaf",
+      "pass_criteria": {
+        "l1": {
+          "sim_pass_required": true,
+          "assertion_pass_required": true,
+          "coverage_checkpoints": [
+            "CHK_SBOX_MATCH"
+          ],
+          "vector_set": "vectors/aes128/aes_sbox_kat.txt",
+          "latency_expectation": "combinational_lookup",
+          "checkpoint_contract": "CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail>"
+        }
+      }
+    },
+    {
+      "module_id": "aes_key_schedule_128",
+      "depends_on": [
+        "aes_sbox"
+      ],
+      "top_module": "aes_key_schedule_128",
+      "rtl_files": [
+        "rtl/aes_key_schedule_128.v"
+      ],
+      "tb_file": "tb/aes_key_schedule_128_tb.cpp",
+      "language": "verilog",
+      "build_output_dir": "reports/l0/aes_key_schedule_128/obj_dir",
+      "sim_output_dir": "reports/l1/aes_key_schedule_128",
+      "l2_policy": "conditional",
+      "criticality": "high",
+      "integration_role": "leaf",
+      "pass_criteria": {
+        "l1": {
+          "sim_pass_required": true,
+          "assertion_pass_required": true,
+          "coverage_checkpoints": [
+            "CHK_ROUNDKEY_MATCH"
+          ],
+          "vector_set": "vectors/aes128/aes_key_schedule_128_kat.txt",
+          "latency_expectation": "round_key_per_cycle",
+          "checkpoint_contract": "CHECKPOINT|CHK_ROUNDKEY_MATCH|PASS|<detail>"
+        }
+      }
+    },
+    {
+      "module_id": "aes_round_transform",
+      "depends_on": [
+        "aes_sbox"
+      ],
+      "top_module": "aes_round_transform",
+      "rtl_files": [
+        "rtl/aes_round_transform.v"
+      ],
+      "tb_file": "tb/aes_round_transform_tb.cpp",
+      "language": "verilog",
+      "build_output_dir": "reports/l0/aes_round_transform/obj_dir",
+      "sim_output_dir": "reports/l1/aes_round_transform",
+      "l2_policy": "conditional",
+      "criticality": "high",
+      "integration_role": "leaf",
+      "pass_criteria": {
+        "l1": {
+          "sim_pass_required": true,
+          "assertion_pass_required": true,
+          "coverage_checkpoints": [
+            "CHK_ROUND_STATE_MATCH"
+          ],
+          "vector_set": "vectors/aes128/aes_round_transform_kat.txt",
+          "latency_expectation": "single_round_transform",
+          "checkpoint_contract": "CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail>"
+        }
+      }
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "depends_on": [
+        "aes_key_schedule_128",
+        "aes_round_transform"
+      ],
+      "top_module": "aes128_encrypt_core",
+      "rtl_files": [
+        "rtl/aes128_encrypt_core.v"
+      ],
+      "tb_file": "tb/aes128_encrypt_core_tb.cpp",
+      "language": "verilog",
+      "build_output_dir": "reports/l0/aes128_encrypt_core/obj_dir",
+      "sim_output_dir": "reports/l1/aes128_encrypt_core",
+      "l2_policy": "required",
+      "criticality": "high",
+      "integration_role": "top",
+      "pass_criteria": {
+        "l1": {
+          "sim_pass_required": true,
+          "assertion_pass_required": true,
+          "coverage_checkpoints": [
+            "CHK_RESET_CLEAR",
+            "CHK_START_ACCEPTED",
+            "CHK_BUSY_ASSERTED",
+            "CHK_DONE_PULSE",
+            "CHK_CIPHERTEXT_MATCH",
+            "CHK_BUSY_DEASSERTED"
+          ],
+          "vector_set": "vectors/aes128/aes128_encrypt_core_kat.txt",
+          "latency_expectation": "11_cycles",
+          "checkpoint_contract": "CHECKPOINT|CHK_*|PASS|<detail>"
+        }
+      }
+    }
+  ]
+}

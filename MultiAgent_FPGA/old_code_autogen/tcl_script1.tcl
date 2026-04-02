@@ -21,9 +21,3 @@ launch_simulation
 
 # 打开波形窗口（仿真 GUI 环境会自动加载）
 start_gui
-
-
-
-
-
-

@@ -1,0 +1,4 @@
+# L2 campaign seed corpus
+profile=back_to_back
+cases=32
+seed=3001

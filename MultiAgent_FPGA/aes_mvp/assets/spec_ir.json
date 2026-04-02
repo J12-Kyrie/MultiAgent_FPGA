@@ -1,0 +1,44 @@
+{
+  "system_goal": "Build an AES-128 encrypt-only FPGA core for the OpenHands-SDK AES MVP using a block-level handshake and an iterative 10-round microarchitecture.",
+  "algorithm": "AES",
+  "variant": "AES-128",
+  "operation": "encrypt",
+  "interface_style": "block_handshake",
+  "microarchitecture": "iterative_10_round",
+  "block_width": 128,
+  "key_width": 128,
+  "clock_reset_assumptions": {
+    "clock": "single rising-edge clock on clk",
+    "reset": "active-low reset on rst_n"
+  },
+  "timing_targets": {
+    "latency_target_cycles": 11,
+    "throughput_mode": "single_block_iterative"
+  },
+  "latency_target_cycles": 11,
+  "accept_condition": "start && !busy",
+  "output_valid_condition": "done pulse",
+  "frozen_interfaces": [
+    "clk",
+    "rst_n",
+    "start",
+    "key[127:0]",
+    "plaintext[127:0]",
+    "busy",
+    "done",
+    "ciphertext[127:0]"
+  ],
+  "module_candidates": [
+    "aes_sbox",
+    "aes_key_schedule_128",
+    "aes_round_transform",
+    "aes128_encrypt_core"
+  ],
+  "verification_redlines": [
+    "No AES decryption path",
+    "No AES-192 or AES-256 support",
+    "No streaming or memory-mapped interface",
+    "No L3 physical closure in the MVP",
+    "No generated testbench workflow"
+  ]
+}

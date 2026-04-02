@@ -252,6 +252,29 @@ run_instance_logs
 
 runtime_*.tar
 
+# MultiAgent_FPGA AES MVP generated artifacts
+/MultiAgent_FPGA/aes_mvp/build/
+/MultiAgent_FPGA/aes_mvp/build_key_schedule/
+/MultiAgent_FPGA/aes_mvp/obj_dir/
+/MultiAgent_FPGA/aes_mvp/sim_output/
+/MultiAgent_FPGA/aes_mvp/simulation.vcd
+/MultiAgent_FPGA/aes_mvp/reports/conversations/
+/MultiAgent_FPGA/aes_mvp/reports/l0/*
+!/MultiAgent_FPGA/aes_mvp/reports/l0/.gitkeep
+/MultiAgent_FPGA/aes_mvp/reports/l1/*
+!/MultiAgent_FPGA/aes_mvp/reports/l1/.gitkeep
+/MultiAgent_FPGA/aes_mvp/reports/l2/*
+!/MultiAgent_FPGA/aes_mvp/reports/l2/.gitkeep
+/MultiAgent_FPGA/aes_mvp/reports/integration/*.json
+/MultiAgent_FPGA/aes_mvp/reports/integration/*.log
+/MultiAgent_FPGA/aes_mvp/reports/integration/*.vcd
+/MultiAgent_FPGA/aes_mvp/reports/integration/**/*.json
+/MultiAgent_FPGA/aes_mvp/reports/integration/**/*.log
+/MultiAgent_FPGA/aes_mvp/reports/integration/**/*.vcd
+/MultiAgent_FPGA/aes_mvp/reports/rtl/*
+!/MultiAgent_FPGA/aes_mvp/reports/rtl/.gitkeep
+/build_key_schedule/
+
 # docker build
 containers/runtime/Dockerfile
 containers/runtime/project.tar.gz
@@ -262,3 +285,8 @@ containers/runtime/code
 test-results
 .sessions
 .eval_sessions
+
+# local agent/tool state
+/.agents/
+/.codex/
+/examples/verilator_mcp/sim_output/

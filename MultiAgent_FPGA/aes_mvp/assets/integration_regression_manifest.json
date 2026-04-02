@@ -1,0 +1,35 @@
+{
+  "top_module": "aes128_encrypt_core",
+  "rtl_files": [
+    "rtl/aes_sbox.v",
+    "rtl/aes_key_schedule_128.v",
+    "rtl/aes_round_transform.v",
+    "rtl/aes128_encrypt_core.v"
+  ],
+  "tb_file": "tb/aes128_encrypt_core_tb.cpp",
+  "build_output_dir": "reports/integration/obj_dir",
+  "sim_output_dir": "reports/integration",
+  "required_modules": [
+    "aes_sbox",
+    "aes_key_schedule_128",
+    "aes_round_transform",
+    "aes128_encrypt_core"
+  ],
+  "interface_freeze_hash": "aes128-block-handshake-iterative10-v1",
+  "regression_checkpoints": [
+    "CHK_RESET_CLEAR",
+    "CHK_START_ACCEPTED",
+    "CHK_BUSY_ASSERTED",
+    "CHK_DONE_PULSE",
+    "CHK_CIPHERTEXT_MATCH",
+    "CHK_BUSY_DEASSERTED"
+  ],
+  "vector_set": "vectors/aes128/aes128_encrypt_core_regress.txt",
+  "latency_target_cycles": 11,
+  "back_to_back_required": true,
+  "mid_reset_scenarios": [
+    "reset_during_busy",
+    "reset_after_done"
+  ],
+  "checkpoint_contract": "CHECKPOINT|<name>|PASS|<detail>"
+}

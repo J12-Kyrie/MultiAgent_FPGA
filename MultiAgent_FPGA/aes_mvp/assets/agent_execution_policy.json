@@ -1,0 +1,25 @@
+{
+  "state_profiles": {
+    "SPEC_INTAKE": "deepseek_official_thinking",
+    "ARCHITECTING": "deepseek_official_thinking",
+    "PLANNING": "deepseek_official_thinking",
+    "MODULE_DESIGN": "deepseek_official_fast",
+    "MODULE_L0": "deepseek_official_fast",
+    "MODULE_L1": "deepseek_official_fast",
+    "MODULE_L2_OPTIONAL": "deepseek_official_thinking",
+    "INTEGRATION_READY": "deepseek_official_fast",
+    "INTEGRATION_REGRESSION": "deepseek_official_thinking"
+  },
+  "state_subagents": {
+    "SPEC_INTAKE": "forbidden",
+    "ARCHITECTING": "forbidden",
+    "PLANNING": "forbidden",
+    "MODULE_DESIGN": "module_worker_allowed",
+    "MODULE_L0": "module_worker_allowed",
+    "MODULE_L1": "module_worker_allowed",
+    "MODULE_L2_OPTIONAL": "l2_campaign_allowed",
+    "INTEGRATION_READY": "forbidden",
+    "INTEGRATION_REGRESSION": "forbidden"
+  },
+  "repair_attempt_threshold": 2
+}
