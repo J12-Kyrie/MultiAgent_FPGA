@@ -1,0 +1,26 @@
+graph LR
+    subgraph Layer1["Layer 1"]
+        sbox["aes_sbox\nCHK_SBOX_MATCH\nL2: skip"]
+    end
+
+    subgraph Layer2["Layer 2"]
+        ks["aes_key_schedule_128\nCHK_ROUNDKEY_MATCH\nL2: conditional"]
+        rt["aes_round_transform\nCHK_ROUND_STATE_MATCH\nL2: conditional"]
+    end
+
+    subgraph Layer3["Layer 3 — Top / Sink"]
+        core["aes128_encrypt_core\n6 checkpoints\nL2: required"]
+    end
+
+    sbox --> ks
+    sbox --> rt
+    ks --> core
+    rt --> core
+
+    style Layer1 fill:#f0fdf4,stroke:#86efac,color:#14532d
+    style Layer2 fill:#eff6ff,stroke:#93c5fd,color:#1e3a5f
+    style Layer3 fill:#fef3c7,stroke:#fbbf24,color:#78350f
+    style sbox fill:#dcfce7,stroke:#4ade80,color:#14532d
+    style ks fill:#dbeafe,stroke:#60a5fa,color:#1e3a5f
+    style rt fill:#dbeafe,stroke:#60a5fa,color:#1e3a5f
+    style core fill:#fef9c3,stroke:#facc15,color:#78350f

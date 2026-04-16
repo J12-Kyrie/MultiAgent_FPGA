@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import json
 from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from MultiAgent_FPGA.aes_mvp.paths import AGENT_EXECUTION_POLICY_PATH
 
 
 class OrchestratorState(str, Enum):
@@ -21,7 +18,6 @@ class OrchestratorState(str, Enum):
     INTEGRATION_READY = 'INTEGRATION_READY'
     INTEGRATION_REGRESSION = 'INTEGRATION_REGRESSION'
     DONE = 'DONE'
-    FAILED = 'FAILED'
 
 
 class LLMProfileName(str, Enum):
@@ -90,8 +86,3 @@ class AgentExecutionPolicy(BaseModel):
             or state_machine_issue
             or interface_issue
         )
-
-
-def load_default_agent_execution_policy() -> AgentExecutionPolicy:
-    with AGENT_EXECUTION_POLICY_PATH.open('r', encoding='utf-8') as handle:
-        return AgentExecutionPolicy.model_validate(json.load(handle))

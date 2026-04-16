@@ -3,16 +3,75 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
+
+from pydantic import BaseModel, ConfigDict, Field
 
 from MultiAgent_FPGA.aes_mvp.artifacts import (
     IntegrationRegressionManifest,
     PlanDAGNode,
 )
 
-AES_TOP_MODULE = 'aes128_encrypt_core'
-L2_PROFILES = ('rand_small', 'rand_medium', 'back_to_back', 'mid_reset')
-TOP_ONLY_L2_PROFILES = ('back_to_back', 'mid_reset')
+# C++ self-checking TBs: Verilator often runs with cwd under workspace validation/sim.
+# The executor injects +aes_mvp_package_root=...; vector files must be opened via
+# aes_tb::resolve_path(argc, argv, requested, fallback). Do not use the legacy
+# two-argument resolve_path(requested, fallback) from main — it ignores plusargs.
+AES_CPP_TB_VECTOR_PATH_CONTRACT = (
+    'Pass argc/argv from main into aes_tb::resolve_path(argc, argv, requested, fallback); '
+    'never resolve KAT paths with only (requested, fallback).'
+)
+
+DEFAULT_L2_PROFILES = ('rand_small', 'rand_medium', 'back_to_back', 'mid_reset')
+DEFAULT_TOP_ONLY_L2_PROFILES = ('back_to_back', 'mid_reset')
+
+
+class ExecutorKind(str, Enum):
+    GENERATE_NODE = 'generate_node'
+    RUN_NODE = 'run_node'
+    RECORD_REPAIR_EDIT = 'record_repair_edit'
+    RUN_INTEGRATION = 'run_integration'
+
+
+class ExecutorStatus(str, Enum):
+    PASSED = 'passed'
+    FAILED = 'failed'
+    RECORDED = 'recorded'
+    SKIPPED = 'skipped'
+
+
+class NextAction(str, Enum):
+    READ_ARTIFACTS = 'read_artifacts'
+    EDIT_PRIMARY_TARGET = 'edit_primary_target'
+    WAIT_FOR_NEXT_BATCH = 'wait_for_next_batch'
+    ESCALATE_TO_ORCHESTRATOR = 'escalate_to_orchestrator'
+
+
+class NextReadHints(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    action: NextAction = NextAction.READ_ARTIFACTS
+    paths: list[str] = Field(default_factory=list)
+    reason: str | None = None
+
+
+class ExecutorObservation(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    executor_kind: ExecutorKind
+    status: ExecutorStatus
+    phase: str
+    request_path: str
+    module_id: str | None = None
+    summary: str
+    result_paths: dict[str, str] = Field(default_factory=dict)
+    next_read_paths: list[str] = Field(default_factory=list)
+    next_read_hints: list[NextReadHints] = Field(default_factory=list)
+    repair_request_path: str | None = None
+    repair_verify_failure_path: str | None = None
+    recommended_next_phase: str | None = None
+    workflow_gate_hint: str | None = None
+    payload: dict[str, object] = Field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -66,7 +125,20 @@ def resolve_node_compile_inputs(
     rtl_files = tuple(resolve_path(package_root, path) for path in node.rtl_files)
     tb_file = resolve_path(package_root, node.tb_file)
 
-    if manifest is None or node.module_id != AES_TOP_MODULE:
+    if manifest is None or node.module_id != manifest.top_module:
+        compile_files = tuple(str(path) for path in (*rtl_files, tb_file))
+        return ResolvedNodeCompileInputs(
+            module_id=node.module_id,
+            compile_files=compile_files,
+            build_output_dir=resolve_path(package_root, node.build_output_dir),
+        )
+
+    dependency_closure_expanded = (
+        bool(node.depends_on)
+        and len(rtl_files) >= len(node.depends_on) + 1
+        and all(path.is_file() for path in rtl_files)
+    )
+    if dependency_closure_expanded:
         compile_files = tuple(str(path) for path in (*rtl_files, tb_file))
         return ResolvedNodeCompileInputs(
             module_id=node.module_id,
@@ -77,11 +149,6 @@ def resolve_node_compile_inputs(
     manifest_rtl_files = tuple(
         resolve_path(package_root, path) for path in manifest.rtl_files
     )
-    if manifest.top_module != AES_TOP_MODULE:
-        raise ValueError(
-            f'Integration manifest top module must be {AES_TOP_MODULE}, '
-            f'got {manifest.top_module}'
-        )
     if all(path.is_file() for path in manifest_rtl_files):
         compile_files = tuple(str(path) for path in (*manifest_rtl_files, tb_file))
         return ResolvedNodeCompileInputs(
@@ -111,10 +178,26 @@ def _parse_key_value_file(path: Path) -> dict[str, str]:
     return values
 
 
-def _resolve_l2_vecfile(package_root: Path, profile: str) -> Path:
-    return resolve_path(
-        package_root, f'vectors/aes128/{AES_TOP_MODULE}_l2_{profile}.txt'
+def _l2_profiles_for_node(node: PlanDAGNode) -> tuple[str, ...]:
+    profiles = tuple(node.design_context.get('l2_profiles', ()))
+    return profiles or DEFAULT_L2_PROFILES
+
+
+def _top_only_profiles_for_node(node: PlanDAGNode) -> tuple[str, ...]:
+    top_only = tuple(node.design_context.get('top_only_l2_profiles', ()))
+    return top_only or DEFAULT_TOP_ONLY_L2_PROFILES
+
+
+def _resolve_l2_vecfile(
+    package_root: Path,
+    node: PlanDAGNode,
+    profile: str,
+) -> Path:
+    defaults = dict(node.design_context.get('l2_defaults', {})).get(profile, {})
+    vecfile = defaults.get(
+        'vecfile', f'vectors/aes128/{node.module_id}_l2_{profile}.txt'
     )
+    return resolve_path(package_root, str(vecfile))
 
 
 def resolve_l2_campaign_inputs(
@@ -126,11 +209,12 @@ def resolve_l2_campaign_inputs(
     cases: int | None = None,
     seed: int | None = None,
 ) -> ResolvedL2CampaignInputs:
-    if profile not in L2_PROFILES:
+    if profile not in _l2_profiles_for_node(node):
         raise ValueError(f'Unsupported L2 profile: {profile}')
 
-    if node.module_id == AES_TOP_MODULE:
-        expected_vecfile = _resolve_l2_vecfile(package_root, profile)
+    is_top_module = node.integration_role in {'top', 'sink'}
+    if is_top_module:
+        expected_vecfile = _resolve_l2_vecfile(package_root, node, profile)
         resolved_vecfile = resolve_path(package_root, vecfile or expected_vecfile)
         if resolved_vecfile != expected_vecfile:
             raise ValueError(
@@ -138,9 +222,9 @@ def resolve_l2_campaign_inputs(
                 f'{resolved_vecfile}'
             )
     else:
-        if profile in TOP_ONLY_L2_PROFILES:
+        if profile in _top_only_profiles_for_node(node):
             raise ValueError(
-                f'L2 profile {profile} is reserved for {AES_TOP_MODULE} in the AES MVP'
+                f'L2 profile {profile} is reserved for integration sink nodes'
             )
         resolved_vecfile = resolve_path(
             package_root, vecfile or node.pass_criteria.l1.vector_set
@@ -148,7 +232,7 @@ def resolve_l2_campaign_inputs(
         if vecfile is not None and not resolved_vecfile.is_file():
             raise FileNotFoundError(f'Missing L2 vector corpus: {resolved_vecfile}')
 
-    if node.module_id == AES_TOP_MODULE:
+    if is_top_module:
         if not resolved_vecfile.is_file():
             raise FileNotFoundError(f'Missing L2 vector corpus: {resolved_vecfile}')
         metadata = _parse_key_value_file(resolved_vecfile)
@@ -189,7 +273,7 @@ def resolve_l2_campaign_inputs(
         'cases': default_cases,
         'seed': default_seed,
     }
-    if node.module_id == AES_TOP_MODULE or vecfile is not None:
+    if is_top_module or vecfile is not None:
         plusargs['vecfile'] = str(resolved_vecfile)
     return ResolvedL2CampaignInputs(
         module_id=node.module_id,

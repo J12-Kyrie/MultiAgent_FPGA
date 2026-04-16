@@ -1,0 +1,46 @@
+flowchart LR
+    subgraph Contracts["BaseContract — Hard Constraints"]
+        C1["AES_SCOPE_CONTRACT"]
+        C2["STRUCTURED_IO_CONTRACT"]
+        C3["NO_RAW_VERILATOR_CONTRACT"]
+        C4["SKILLS_AS_AUTHORITY_CONTRACT"]
+        C5["FRAMEWORK_OWNS_PROGRESS"]
+    end
+
+    subgraph Mixins["PhaseMixin — Soft Constraints"]
+        M1["WORKER_LOCAL_SCOPE"]
+        M2["WORKER_REQUEST_AUTHORITY"]
+        M3["RUN_EXECUTOR_PHASE"]
+        M4["GENERATE_PHASE"]
+        M5["VALIDATE_PHASE"]
+        M6["REPAIR_PHASE_ROUND_1/2+"]
+        M7["L2_PHASE"]
+        M8["MEMORY_CONSULTATION_DIRECTIVE"]
+        M9["REPAIR_MEMORY_DIRECTIVE"]
+    end
+
+    subgraph Payload["InstancePayload"]
+        P1["Per-task lines:\nwritable files,\nmodule-specific hints"]
+    end
+
+    subgraph SkillBlock["Skill References"]
+        S1["build_skill_reference_block()\nORCHESTRATOR_CORE_SKILL_KEYS\nWORKER_FPGA_CORE_SKILL_KEYS\nREPAIR_CORE_SKILL_KEYS"]
+    end
+
+    subgraph MemBlock["Memory Block\n(generate mode only)"]
+        MB["MemoryStore.build_prompt_block()"]
+    end
+
+    Contracts --> Compose["compose_prompt()"]
+    Mixins --> Compose
+    Payload --> Compose
+    SkillBlock --> Compose
+    MemBlock --> Compose
+    Compose --> Final["Final System Prompt"]
+
+    style Contracts fill:#fee2e2,stroke:#fca5a5,color:#7f1d1d
+    style Mixins fill:#dbeafe,stroke:#93c5fd,color:#1e3a5f
+    style Payload fill:#fef3c7,stroke:#fbbf24,color:#78350f
+    style SkillBlock fill:#f0fdf4,stroke:#86efac,color:#14532d
+    style MemBlock fill:#f5f3ff,stroke:#c4b5fd,color:#3b0764
+    style Compose fill:#f1f5f9,stroke:#94a3b8,color:#334155

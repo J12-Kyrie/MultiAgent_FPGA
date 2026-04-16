@@ -1,0 +1,54 @@
+flowchart TB
+    subgraph PlanTime["Plan Time — one-time"]
+        SI["spec_ir.json"]
+        PD["plan_dag.json"]
+        GP["generation_plan.json"]
+        BGS["brief_generation_summary.json"]
+        BP["batch_plan.json"]
+        DP["delegate_plan.json"]
+        DR["delegate_requests/\nbatch__worker.json"]
+    end
+
+    subgraph PerIteration["Per Loop Iteration"]
+        WG["workflow_gate.json\n(re-evaluated each loop)"]
+        CBS["current_batch_snapshot.json"]
+        BH["batch_history.json\n(appended each batch)"]
+        AHD["autonomous_handoff_digest.json"]
+        FM["fragility_memory.json\n(updated on L2 results)"]
+    end
+
+    subgraph PerNode["Per Node Workspace"]
+        WS["workspace_state.json"]
+        MC["contracts/module_contract.json"]
+        TC["contracts/testbench_contract.json"]
+        DB["contracts/design_brief.json"]
+        GR["generation_result.json"]
+        RR["repair_request.json"]
+        ER["edit_receipt.json"]
+        VS["validation/validation_summary.json"]
+        L0R["validation/l0_result.json"]
+        MRR["validation/sim/module_run_result.json"]
+        PR["promotion/promotion_record.json"]
+    end
+
+    subgraph SessionEnd["Session End"]
+        PE["promotion_events.json"]
+        PF["promotion_failures.json"]
+        IS["integration_summary.json"]
+        DE["deterministic_execution.json"]
+        DRes["delegate_results.json"]
+        DFB["delegate_fallbacks.json"]
+        FI["finalizer_input.json"]
+        FAS["final_acceptance_summary.json"]
+        SS["session_summary.json"]
+        RT["report_tree.json"]
+    end
+
+    PlanTime --> PerIteration
+    PerIteration --> PerNode
+    PerNode --> SessionEnd
+
+    style PlanTime fill:#eff6ff,stroke:#93c5fd,color:#1e3a5f
+    style PerIteration fill:#fefce8,stroke:#fde047,color:#713f12
+    style PerNode fill:#f5f3ff,stroke:#c4b5fd,color:#3b0764
+    style SessionEnd fill:#f0fdf4,stroke:#86efac,color:#14532d

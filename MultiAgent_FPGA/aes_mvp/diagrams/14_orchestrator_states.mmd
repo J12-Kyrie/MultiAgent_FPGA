@@ -1,0 +1,30 @@
+stateDiagram-v2
+    [*] --> SPEC_INTAKE
+    SPEC_INTAKE --> ARCHITECTING: thinking profile
+    ARCHITECTING --> PLANNING: thinking profile
+    PLANNING --> MODULE_DESIGN: thinking profile
+
+    MODULE_DESIGN --> MODULE_L0: fast profile
+    MODULE_L0 --> MODULE_L1: fast profile
+
+    MODULE_L1 --> MODULE_L2_OPTIONAL: requires_l2=true
+    MODULE_L1 --> INTEGRATION_READY: requires_l2=false
+
+    MODULE_L2_OPTIONAL --> INTEGRATION_READY: fast profile
+
+    INTEGRATION_READY --> INTEGRATION_REGRESSION: thinking profile
+    INTEGRATION_REGRESSION --> DONE: thinking profile
+
+    DONE --> [*]
+
+    note right of SPEC_INTAKE
+        States SPEC_INTAKE through PLANNING\n
+        use thinking LLM profile\n
+        with subagent_policy = forbidden
+    end note
+
+    note right of MODULE_DESIGN
+        States MODULE_DESIGN through MODULE_L1\n
+        use fast LLM profile\n
+        with subagent_policy = module_worker_allowed
+    end note

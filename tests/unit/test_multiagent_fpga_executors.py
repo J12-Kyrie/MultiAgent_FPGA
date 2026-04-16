@@ -5,14 +5,27 @@ from pathlib import Path
 import pytest
 
 from MultiAgent_FPGA.aes_mvp.artifacts import (
-    load_default_integration_manifest,
-    load_default_plan_dag,
+    PlanDAG,
 )
 from MultiAgent_FPGA.aes_mvp.executors import (
     IntegrationRegressionExecutor,
+    L0Executor,
     L1Executor,
     L2CampaignExecutor,
 )
+from MultiAgent_FPGA.aes_mvp.synthesis import (
+    DEFAULT_AUTONOMOUS_GOAL,
+    synthesize_integration_manifest,
+    synthesize_plan_dag,
+    synthesize_spec_ir,
+)
+
+
+def _synthesized_context() -> tuple[PlanDAG, object]:
+    spec_ir = synthesize_spec_ir(system_goal=DEFAULT_AUTONOMOUS_GOAL)
+    plan_dag = synthesize_plan_dag(spec_ir)
+    manifest = synthesize_integration_manifest(spec_ir, plan_dag)
+    return plan_dag, manifest
 
 
 class FakeVerilatorAdapter:
@@ -69,9 +82,10 @@ class FakeVerilatorAdapter:
         )
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)
+        plusargs = (extra_arguments or {}).get('plusargs') or {}
         checkpoint_names = (
             self.l2_checkpoints
-            if extra_arguments and extra_arguments.get('plusargs')
+            if 'profile' in plusargs
             else self.integration_checkpoints
         )
         log_lines = [f'CHECKPOINT|{name}|PASS|ok' for name in checkpoint_names]
@@ -132,18 +146,23 @@ def _write_common_aes_tree(package_root: Path) -> None:
 def test_l2_campaign_executor_resolves_top_profile_inputs_and_outputs(tmp_path):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    plan_dag = load_default_plan_dag()
+    plan_dag, manifest = _synthesized_context()
     top_node = plan_dag.nodes[-1]
     adapter = FakeVerilatorAdapter(
         l2_checkpoints=top_node.pass_criteria.l1.coverage_checkpoints,
         integration_checkpoints=[],
     )
-    executor = L2CampaignExecutor(adapter=adapter, package_root=package_root)
+    executor = L2CampaignExecutor(
+        adapter=adapter,
+        package_root=package_root,
+        integration_manifest=manifest,
+    )
 
     report = executor.run(top_node, profile='rand_small')
 
     l2_compile = next(call for call in adapter.calls if call[0] == 'simulate')
     assert l2_compile[1]['extra_arguments']['plusargs'] == {
+        'aes_mvp_package_root': str(package_root.resolve()),
         'profile': 'rand_small',
         'vecfile': str(
             (
@@ -164,11 +183,16 @@ def test_l2_campaign_executor_resolves_top_profile_inputs_and_outputs(tmp_path):
 def test_l2_campaign_executor_rejects_top_only_profiles_for_leaf_nodes(tmp_path):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    leaf_node = load_default_plan_dag().nodes[0]
+    plan_dag, manifest = _synthesized_context()
+    leaf_node = plan_dag.nodes[0]
     adapter = FakeVerilatorAdapter(l2_checkpoints=[], integration_checkpoints=[])
-    executor = L2CampaignExecutor(adapter=adapter, package_root=package_root)
+    executor = L2CampaignExecutor(
+        adapter=adapter,
+        package_root=package_root,
+        integration_manifest=manifest,
+    )
 
-    with pytest.raises(ValueError, match='reserved for aes128_encrypt_core'):
+    with pytest.raises(ValueError, match='reserved for integration sink nodes'):
         executor.run(leaf_node, profile='back_to_back', cases=32, seed=3001)
 
 
@@ -177,7 +201,7 @@ def test_integration_regression_executor_compiles_manifest_and_validates_checkpo
 ):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    manifest = load_default_integration_manifest()
+    _, manifest = _synthesized_context()
     adapter = FakeVerilatorAdapter(
         l2_checkpoints=list(manifest.regression_checkpoints),
         integration_checkpoints=manifest.regression_checkpoints,
@@ -204,6 +228,7 @@ def test_integration_regression_executor_compiles_manifest_and_validates_checkpo
         'useExistingBuild': True,
         'autoGenerateTestbench': False,
         'enableWaveform': True,
+        'plusargs': {'aes_mvp_package_root': str(package_root.resolve())},
     }
     assert report.path.name == 'integration_regression_result.json'
     assert report.payload['status'] == 'passed'
@@ -231,16 +256,41 @@ def test_integration_regression_executor_compiles_manifest_and_validates_checkpo
 def test_l1_executor_uses_manifest_rtl_files_for_top_level_reintegration(tmp_path):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    top_node = load_default_plan_dag().nodes[-1]
+    plan_dag, manifest = _synthesized_context()
+    top_node = plan_dag.nodes[-1]
     adapter = FakeVerilatorAdapter(
         l2_checkpoints=[],
         integration_checkpoints=top_node.pass_criteria.l1.coverage_checkpoints,
     )
-    executor = L1Executor(adapter=adapter, package_root=package_root)
+    l0 = L0Executor(
+        adapter=adapter,
+        package_root=package_root,
+        integration_manifest=manifest,
+    )
+    l1 = L1Executor(
+        adapter=adapter,
+        package_root=package_root,
+        integration_manifest=manifest,
+    )
 
-    report = executor.run(top_node)
+    l0_report = l0.run(top_node)
+    report = l1.run(
+        top_node,
+        skip_compile=True,
+        reuse_compile_result=str(l0_report.payload['compile_result']),
+    )
 
-    compile_call = next(call for call in adapter.calls if call[0] == 'compile')
+    compile_calls = [call for call in adapter.calls if call[0] == 'compile']
+    assert len(compile_calls) == 1
+    simulate_calls = [call for call in adapter.calls if call[0] == 'simulate']
+    assert len(simulate_calls) == 1
+
+    simulate_call = simulate_calls[0]
+    assert simulate_call[1]['extra_arguments'] == {
+        'plusargs': {'aes_mvp_package_root': str(package_root.resolve())},
+    }
+
+    compile_call = compile_calls[0]
     assert compile_call[1]['files'] == [
         str((package_root / 'rtl/aes_sbox.v').resolve()),
         str((package_root / 'rtl/aes_key_schedule_128.v').resolve()),
@@ -249,3 +299,99 @@ def test_l1_executor_uses_manifest_rtl_files_for_top_level_reintegration(tmp_pat
         str((package_root / 'tb/aes128_encrypt_core_tb.cpp').resolve()),
     ]
     assert report.payload['module_id'] == 'aes128_encrypt_core'
+    assert report.payload['compile_result'] == l0_report.payload['compile_result']
+
+
+def test_l1_executor_prefers_expanded_workspace_closure_for_top_node(tmp_path):
+    package_root = tmp_path
+    _write_common_aes_tree(package_root)
+    plan_dag, manifest = _synthesized_context()
+    top_node = plan_dag.nodes[-1]
+
+    promoted_root = package_root / 'reports' / 'conversations' / 'test' / 'promoted'
+    promoted_root.mkdir(parents=True, exist_ok=True)
+    promoted_rtl_files: list[str] = []
+    for node in plan_dag.nodes:
+        promoted_module_rtl = (
+            promoted_root / node.module_id / 'rtl' / Path(node.rtl_files[0]).name
+        )
+        promoted_module_rtl.parent.mkdir(parents=True, exist_ok=True)
+        promoted_module_rtl.write_text(
+            f'module {node.top_module}; endmodule\n',
+            encoding='utf-8',
+        )
+        promoted_rtl_files.append(str(promoted_module_rtl.resolve()))
+
+    workspace_tb = (
+        package_root
+        / 'reports'
+        / 'conversations'
+        / 'test'
+        / 'workspaces'
+        / top_node.module_id
+        / 'draft'
+        / 'tb'
+        / Path(top_node.tb_file).name
+    )
+    workspace_tb.parent.mkdir(parents=True, exist_ok=True)
+    workspace_tb.write_text('// workspace top tb\n', encoding='utf-8')
+
+    execution_node = top_node.model_copy(
+        update={
+            'rtl_files': promoted_rtl_files,
+            'tb_file': str(workspace_tb.resolve()),
+            'build_output_dir': str(
+                (
+                    package_root
+                    / 'reports'
+                    / 'conversations'
+                    / 'test'
+                    / 'workspaces'
+                    / top_node.module_id
+                    / 'validation'
+                    / 'build'
+                ).resolve()
+            ),
+            'sim_output_dir': str(
+                (
+                    package_root
+                    / 'reports'
+                    / 'conversations'
+                    / 'test'
+                    / 'workspaces'
+                    / top_node.module_id
+                    / 'validation'
+                    / 'sim'
+                ).resolve()
+            ),
+        }
+    )
+    adapter = FakeVerilatorAdapter(
+        l2_checkpoints=[],
+        integration_checkpoints=top_node.pass_criteria.l1.coverage_checkpoints,
+    )
+    l0 = L0Executor(
+        adapter=adapter,
+        package_root=package_root,
+        integration_manifest=manifest,
+    )
+    l1 = L1Executor(
+        adapter=adapter,
+        package_root=package_root,
+        integration_manifest=manifest,
+    )
+
+    l0_report = l0.run(execution_node)
+    l1.run(
+        execution_node,
+        skip_compile=True,
+        reuse_compile_result=str(l0_report.payload['compile_result']),
+    )
+
+    compile_calls = [call for call in adapter.calls if call[0] == 'compile']
+    assert len(compile_calls) == 1
+    compile_call = compile_calls[0]
+    assert compile_call[1]['files'] == [
+        *promoted_rtl_files,
+        str(workspace_tb.resolve()),
+    ]

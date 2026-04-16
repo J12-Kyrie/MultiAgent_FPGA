@@ -13,6 +13,8 @@ namespace {
 
 std::string resolve_vecfile(int argc, char** argv) {
     return aes_tb::resolve_path(
+        argc,
+        argv,
         aes_tb::get_plusarg_value(
             argc,
             argv,

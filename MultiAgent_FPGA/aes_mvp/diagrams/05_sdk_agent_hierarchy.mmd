@@ -1,0 +1,42 @@
+flowchart TB
+    subgraph Orchestrator["Execution Orchestrator — Thinking LLM"]
+        direction TB
+        OTools["Tools: terminal, ThinkTool,\nDelegateTool, run_executor"]
+        OMCP["MCP: verilator (filtered)"]
+        OCond["Condenser: LLMSummarizing\nmax_events=12, keep_first=2"]
+    end
+
+    subgraph Workers["Module Workers — Fast LLM"]
+        direction TB
+        W1["module_worker__aes_sbox"]
+        W2["module_worker__aes_key_schedule_128"]
+        W3["module_worker__aes_round_transform"]
+        W4["module_worker__aes128_encrypt_core"]
+        WTools["Tools: terminal, file_editor,\ntask_tracker, run_executor"]
+    end
+
+    subgraph Repair["Repair Workers — Fast LLM"]
+        direction TB
+        R1["module_repair__aes_sbox"]
+        R2["module_repair__aes_key_schedule_128"]
+        R3["module_repair__aes_round_transform"]
+        R4["module_repair__aes128_encrypt_core"]
+        RTools["Tools: file_editor,\ntask_tracker"]
+    end
+
+    subgraph Finalizer["Finalizer — Thinking LLM"]
+        FTools["Tools: FinishTool, ThinkTool"]
+        FNo["No MCP, No Delegate"]
+    end
+
+    Orchestrator -->|"DelegateTool"| Workers
+    Orchestrator -->|"DelegateTool"| Repair
+    Workers -->|"run_executor"| Executors["L0 / L1 / L2 Executors"]
+    Executors -->|"async"| Verilator["Verilator MCP Server"]
+
+    style Orchestrator fill:#eff6ff,stroke:#93c5fd,color:#1e3a5f
+    style Workers fill:#f0fdf4,stroke:#86efac,color:#14532d
+    style Repair fill:#fef3c7,stroke:#fbbf24,color:#78350f
+    style Finalizer fill:#f5f3ff,stroke:#c4b5fd,color:#3b0764
+    style Executors fill:#e0f2fe,stroke:#38bdf8,color:#0c4a6e
+    style Verilator fill:#f1f5f9,stroke:#94a3b8,color:#334155

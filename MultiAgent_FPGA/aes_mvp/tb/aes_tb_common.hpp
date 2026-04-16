@@ -516,6 +516,67 @@ inline std::string get_plusarg_value(
     return fallback;
 }
 
+inline std::string join_under_package_root(
+    const std::string& root,
+    const std::string& relative_path
+) {
+    if (root.empty()) {
+        return {};
+    }
+    std::string r = root;
+    while (!r.empty() && (r.back() == '/' || r.back() == '\\')) {
+        r.pop_back();
+    }
+    std::string p = relative_path;
+    while (!p.empty() && (p.front() == '/' || p.front() == '\\')) {
+        p.erase(0, 1);
+    }
+    if (r.empty()) {
+        return p;
+    }
+    return r + '/' + p;
+}
+
+inline std::string resolve_path(
+    int argc,
+    char** argv,
+    const std::string& requested,
+    const std::string& fallback
+) {
+    std::vector<std::string> candidates;
+    const std::string package_root =
+        get_plusarg_value(argc, argv, "aes_mvp_package_root", "");
+    if (!package_root.empty() && !requested.empty()) {
+        const bool absolute_unix = requested[0] == '/';
+        const bool absolute_windows =
+            requested.size() > 2
+            && std::isalpha(static_cast<unsigned char>(requested[0]))
+            && (requested[1] == ':' || requested[1] == '\\');
+        if (!absolute_unix && !absolute_windows) {
+            const std::string joined = join_under_package_root(package_root, requested);
+            if (!joined.empty()) {
+                candidates.push_back(joined);
+            }
+        }
+    }
+    candidates.push_back(requested);
+    candidates.push_back(std::string("../../../../") + requested);
+    candidates.push_back(std::string("../../../") + requested);
+    candidates.push_back(std::string("../../") + requested);
+    candidates.push_back(fallback);
+
+    for (std::size_t i = 0; i < candidates.size(); ++i) {
+        if (!candidates[i].empty() && file_exists(candidates[i])) {
+            return candidates[i];
+        }
+    }
+
+    std::ostringstream message;
+    message << "Unable to resolve vector file. Requested='" << requested
+            << "' fallback='" << fallback << "'";
+    throw std::runtime_error(message.str());
+}
+
 inline uint64_t get_plusarg_uint(
     int argc,
     char** argv,

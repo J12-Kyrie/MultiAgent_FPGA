@@ -1,0 +1,29 @@
+flowchart TB
+    Start["_evaluate_workflow_gate()"] --> CompSum["_autonomous_completion_summary()"]
+
+    CompSum --> ClassifyModules["Classify each required module:\npromoted / blocked / cascade_blocked / pending"]
+    ClassifyModules --> CheckInt["Check integration_status\nfrom deterministic_execution.json"]
+
+    CheckInt --> Decision{"Decision Logic"}
+
+    Decision -->|"protocol_violation\n!= None"| Blocked1["decision: blocked\nreason: protocol_violation"]
+    Decision -->|"completion_status\n== success"| Success["decision: success"]
+    Decision -->|"completion_status\n== blocked"| Blocked2["decision: blocked\nreason: required_module_blocked"]
+    Decision -->|"next batch\navailable"| Continue["decision: continue\nnext_batch_ids: list"]
+    Decision -->|"all promoted,\nintegration not passed,\nattempts <= 1"| ReadyInt["decision:\nready_for_integration"]
+    Decision -->|"no eligible\nbatches remaining"| Blocked3["decision: blocked\nreason: no_remaining_batches"]
+
+    Success --> WriteGate["Write workflow_gate.json"]
+    Blocked1 --> WriteGate
+    Blocked2 --> WriteGate
+    Continue --> WriteGate
+    ReadyInt --> WriteGate
+    Blocked3 --> WriteGate
+
+    style Success fill:#dcfce7,stroke:#4ade80,color:#14532d
+    style Blocked1 fill:#fee2e2,stroke:#f87171,color:#7f1d1d
+    style Blocked2 fill:#fee2e2,stroke:#f87171,color:#7f1d1d
+    style Blocked3 fill:#fee2e2,stroke:#f87171,color:#7f1d1d
+    style Continue fill:#dbeafe,stroke:#60a5fa,color:#1e3a5f
+    style ReadyInt fill:#fef3c7,stroke:#fbbf24,color:#78350f
+    style Decision fill:#fefce8,stroke:#fde047,color:#713f12

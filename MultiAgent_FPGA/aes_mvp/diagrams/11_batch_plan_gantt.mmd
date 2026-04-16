@@ -1,0 +1,32 @@
+gantt
+    title Batch Execution Order — Topological Layers + Repair Rounds
+    dateFormat X
+    axisFormat %s
+
+    section Layer 1
+    gen_layer_1_1_generate_validate (aes_sbox)        :a1, 0, 1
+    gen_layer_1_1_aes_sbox_repair_1                    :a2, 1, 2
+    gen_layer_1_1_aes_sbox_revalidate_1                :a3, 2, 3
+    gen_layer_1_1_aes_sbox_repair_2                    :a4, 3, 4
+    gen_layer_1_1_aes_sbox_revalidate_2                :a5, 4, 5
+
+    section Layer 2
+    gen_layer_2_1_generate_validate (ks + rt)           :b1, 5, 6
+    gen_layer_2_1_ks_repair_1                           :b2, 6, 7
+    gen_layer_2_1_ks_revalidate_1                       :b3, 7, 8
+    gen_layer_2_1_rt_repair_1                           :b4, 6, 7
+    gen_layer_2_1_rt_revalidate_1                       :b5, 7, 8
+    gen_layer_2_1_ks_repair_2                           :b6, 8, 9
+    gen_layer_2_1_ks_revalidate_2                       :b7, 9, 10
+    gen_layer_2_1_rt_repair_2                           :b8, 8, 9
+    gen_layer_2_1_rt_revalidate_2                       :b9, 9, 10
+
+    section Layer 3
+    gen_layer_3_1_generate_validate (core)              :c1, 10, 11
+    gen_layer_3_1_core_repair_1                         :c2, 11, 12
+    gen_layer_3_1_core_revalidate_1                     :c3, 12, 13
+    gen_layer_3_1_core_repair_2                         :c4, 13, 14
+    gen_layer_3_1_core_revalidate_2                     :c5, 14, 15
+
+    section Integration
+    integration                                         :d1, 15, 16

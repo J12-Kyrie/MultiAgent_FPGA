@@ -98,24 +98,14 @@ export PYTHONPATH=.
 python -m MultiAgent_FPGA.aes_mvp run-integration
 ```
 
-End-to-end AES MVP, deterministic review mode:
+End-to-end AES MVP (autonomous-generate; default):
 
 ```bash
 cd /Users/kyrie/Downloads/OpenHands-1.5.0
 conda activate openhands
 export PYTHONPATH=.
 export DEEPSEEK_API_KEY=<your-secret>
-python -m MultiAgent_FPGA.aes_mvp run-aes-mvp --execution-mode deterministic-review
-```
-
-End-to-end AES MVP, hybrid delegate mode:
-
-```bash
-cd /Users/kyrie/Downloads/OpenHands-1.5.0
-conda activate openhands
-export PYTHONPATH=.
-export DEEPSEEK_API_KEY=<your-secret>
-python -m MultiAgent_FPGA.aes_mvp run-aes-mvp --execution-mode hybrid-delegate
+python -m MultiAgent_FPGA.aes_mvp run-aes-mvp
 ```
 
 Direct Verilator MCP smoke test:
@@ -145,13 +135,9 @@ These commands now cover the full AES MVP lane:
 - DeepSeek provider preflight
 - Verilator MCP connectivity and smoke tests
 - deterministic node and integration execution
-- live `run-aes-mvp` execution in:
-  - `deterministic-review`
-  - `hybrid-delegate`
+- live `run-aes-mvp` execution (`autonomous-generate` only; legacy `hybrid-*` and `deterministic-review` modes were removed from the runtime)
 
 The stable request model is `deepseek-chat`. The official reasoning-only model boundary is `deepseek-reasoner`.
-
-In `hybrid-delegate` mode, subagents are used only for read-only artifact review. They must not rerun raw `verilator_compile` or `verilator_simulate`.
 
 # Command Selection Guidance
 
@@ -165,11 +151,9 @@ Use the commands in this order:
    Use this to verify SDK bootstrap, delegate registration, and report tree setup.
 4. `python -m MultiAgent_FPGA.aes_mvp run-integration`
    Use this to verify deterministic AES integration before involving a live agent.
-5. `python -m MultiAgent_FPGA.aes_mvp run-aes-mvp --execution-mode deterministic-review`
-   Use this as the stable green path.
-6. `python -m MultiAgent_FPGA.aes_mvp run-aes-mvp --execution-mode hybrid-delegate`
-   Use this for multi-agent thesis demonstrations after deterministic integration is already green.
-7. `python examples/verilator_mcp/run_direct_mcp.py`
+5. `python -m MultiAgent_FPGA.aes_mvp run-aes-mvp`
+   Use this for the full autonomous generate / validate / repair / integrate lane (default mode).
+6. `python examples/verilator_mcp/run_direct_mcp.py`
    Use this when you need to verify that the local Verilator MCP path is healthy.
-8. `poetry run pre-commit run ...`
+7. `poetry run pre-commit run ...`
    Use this before handing changes back or committing.

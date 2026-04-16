@@ -61,17 +61,17 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
       let isCompiledDir = false;
       let buildDir: string = '';
       let executablePath: string = '';
-      
+
       // Check if design is a directory
       const designStat = await fs.stat(params.design);
       if (designStat.isDirectory()) {
         isCompiledDir = true;
         buildDir = params.design;
-        
+
         // Look for executable in the directory
         const moduleName = params.topModule || await this.detectTopModuleFromDir(buildDir);
         executablePath = join(buildDir, `V${moduleName}`);
-        
+
         // Check if executable exists
         try {
           await fs.access(executablePath);
@@ -85,7 +85,7 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
             throw new Error(`Cannot find executable for module ${moduleName} in ${buildDir}`);
           }
         }
-        
+
         // For testbench generation, we need the original design file
         // Try to find it from the build directory
         designFile = await this.findDesignFile(buildDir, moduleName);
@@ -100,10 +100,10 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
 
       if (!testbenchFile && params.autoGenerateTestbench && !params.useExistingBuild) {
         logger.info('No testbench provided, generating one automatically...');
-        
+
         // Determine module name
         const moduleName = params.topModule || await this.detectTopModule(designFile);
-        
+
         // Generate C++ testbench for Verilator
         const tbResult = await this.generateCppTestbench(
           designFile,
@@ -119,9 +119,9 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
       if (!params.useExistingBuild && !isCompiledDir) {
         // Compile design and testbench
         logger.info('Compiling design and testbench...');
-        
+
         const files = [designFile];
-        
+
         const compileResult = await this.compiler.execute({
           files,
           topModule: params.topModule,
@@ -135,7 +135,7 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
         });
 
         if (!compileResult.success || !compileResult.data) {
-          throw new Error('Compilation failed: ' + (compileResult.error || 'Unknown error'));
+          throw new Error(compileResult.error || 'Compilation failed: Unknown error');
         }
 
         buildDir = compileResult.data.outputDir;
@@ -169,14 +169,14 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
       if (params.enableWaveform) {
         const waveformName = params.waveformFile || `simulation.${params.waveformFormat}`;
         result.waveformFile = join(params.outputDir, waveformName);
-        
+
         // Check multiple possible locations for waveform
         const possibleWaveformPaths = [
           waveformName,
           join(dirname(executablePath), waveformName),
           join(params.outputDir, waveformName),
         ];
-        
+
         for (const path of possibleWaveformPaths) {
           if (await this.fileExists(path) && path !== result.waveformFile) {
             await fs.rename(path, result.waveformFile!);
@@ -201,10 +201,16 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
         cpuTime: simResult.duration,
       };
 
+      const failureDetail =
+        result.errors.length > 0
+          ? result.errors.join('; ')
+          : `exit code ${simResult.exitCode}; stderr (first 2k): ${(simResult.stderr || '').slice(0, 2000)}`;
+
       return {
         success: result.passed,
         data: result,
         warnings: result.warnings.length > 0 ? result.warnings : undefined,
+        error: result.passed ? undefined : `Simulation failed: ${failureDetail}`,
       };
 
     } catch (error) {
@@ -223,9 +229,9 @@ export class SimulateTool extends AbstractTool<SimulateParams, SimulationResult>
   ): Promise<{ testbenchFile: string }> {
     const outputDir = params.outputDir;
     await fs.mkdir(outputDir, { recursive: true });
-    
+
     const testbenchFile = join(outputDir, `tb_${moduleName}.cpp`);
-    
+
     // Generate a basic C++ testbench for Verilator
     const testbenchContent = `#include <verilated.h>
 #include <verilated_vcd_c.h>
@@ -241,20 +247,20 @@ double sc_time_stamp() {
 
 int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
-    
+
     // Create DUT instance
     auto dut = std::make_unique<V${moduleName}>();
-    
+
     // Create trace
     ${params.enableWaveform ? `Verilated::traceEverOn(true);
     auto trace = std::make_unique<VerilatedVcdC>();
     dut->trace(trace.get(), 5);
     trace->open("${params.waveformFile || 'simulation.vcd'}");` : ''}
-    
+
     // Initialize signals
     dut->clk = 0;
     dut->rst_n = 0;
-    
+
     // Reset sequence
     for (int i = 0; i < 10; i++) {
         dut->clk = !dut->clk;
@@ -262,29 +268,29 @@ int main(int argc, char** argv) {
         ${params.enableWaveform ? 'trace->dump(sim_time++);' : 'sim_time++;'}
     }
     dut->rst_n = 1;
-    
+
     std::cout << "Simulation started\\n";
-    
+
     // Run simulation
     for (int i = 0; i < ${params.simulationTime || 10000}; i++) {
         dut->clk = !dut->clk;
         dut->eval();
         ${params.enableWaveform ? 'trace->dump(sim_time++);' : 'sim_time++;'}
     }
-    
+
     // Final cleanup
     dut->final();
     ${params.enableWaveform ? 'trace->close();' : ''}
-    
+
     std::cout << "Simulation complete\\n";
     std::cout << "Total cycles: " << sim_time << "\\n";
-    
+
     return 0;
 }`;
 
     await fs.writeFile(testbenchFile, testbenchContent);
     logger.info(`Generated C++ testbench: ${testbenchFile}`);
-    
+
     return { testbenchFile };
   }
 
@@ -293,7 +299,7 @@ int main(int argc, char** argv) {
       // Read the design file
       const content = await fs.readFile(designFile, 'utf-8');
       const moduleMatch = content.match(/module\s+(\w+)\s*(?:#|\()/);
-      
+
       if (moduleMatch) {
         return moduleMatch[1];
       }
@@ -309,18 +315,18 @@ int main(int argc, char** argv) {
     // Look for executable files or Makefile to determine module name
     try {
       const files = await fs.readdir(buildDir);
-      
+
       // Look for V* executables
       const vExecutables = files.filter(f => f.startsWith('V') && !f.includes('.'));
       if (vExecutables.length > 0) {
         return vExecutables[0].substring(1); // Remove 'V' prefix
       }
-      
+
       // Look for Makefile
       if (files.includes('Vuart_apb.mk')) {
         return 'uart_apb';
       }
-      
+
       // Look for header files
       const headers = files.filter(f => f.endsWith('.h') && f.startsWith('V'));
       if (headers.length > 0) {
@@ -332,7 +338,7 @@ int main(int argc, char** argv) {
     } catch (error) {
       logger.warn(`Could not detect module from directory: ${error}`);
     }
-    
+
     return 'top';
   }
 
@@ -349,14 +355,14 @@ int main(int argc, char** argv) {
       `../../../rtl/uart/${moduleName}.v`,
       `../../../rtl/uart/${moduleName}.sv`,
     ];
-    
+
     for (const relativePath of possiblePaths) {
       const fullPath = join(buildDir, relativePath);
       if (await this.fileExists(fullPath)) {
         return fullPath;
       }
     }
-    
+
     // If we can't find it, return a placeholder
     throw new Error(`Cannot find design file for module ${moduleName}`);
   }
@@ -407,7 +413,7 @@ int main(int argc, char** argv) {
   private parseAssertions(output: string): AssertionResult[] {
     const assertions: AssertionResult[] = [];
     const assertionRegex = /Assertion\s+(\w+)\s+at\s+(.+):(\d+)\s+(passed|failed):\s*(.+)?/gi;
-    
+
     let match;
     while ((match = assertionRegex.exec(output)) !== null) {
       const [, name, file, line, status, message] = match;

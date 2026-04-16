@@ -15,8 +15,6 @@ from typing import Any, Mapping
 import requests
 from pydantic import SecretStr
 
-from openhands.core.config import LLMConfig
-
 DEEPSEEK_API_KEY_ENV = 'DEEPSEEK_API_KEY'
 LEGACY_CHATFIRE_API_KEY_ENV = 'CHATFIRE_API_KEY'
 DEEPSEEK_BASE_URL = 'https://api.deepseek.com'
@@ -24,7 +22,8 @@ DEEPSEEK_CHAT_MODEL = 'deepseek-chat'
 DEEPSEEK_REASONER_MODEL = 'deepseek-reasoner'
 DEEPSEEK_RESOLVED_MODEL = DEEPSEEK_CHAT_MODEL
 SDK_DEEPSEEK_MODEL = f'openai/{DEEPSEEK_CHAT_MODEL}'
-SDK_REASONING_EFFORT = 'none'
+SDK_REASONING_EFFORT_THINKING = 'medium'
+SDK_REASONING_EFFORT_FAST = 'none'
 
 
 @dataclass(frozen=True)
@@ -74,69 +73,25 @@ def _resolve_api_key(
     return _require_api_key(env_var)
 
 
-def build_deepseek_official_thinking(
-    env_var: str = DEEPSEEK_API_KEY_ENV,
-    *,
-    allow_placeholder_api_key: bool = False,
-) -> LLMConfig:
-    return LLMConfig(
-        model=DEEPSEEK_CHAT_MODEL,
-        api_key=_resolve_api_key(
-            env_var,
-            allow_placeholder=allow_placeholder_api_key,
-        ),
-        base_url=DEEPSEEK_BASE_URL,
-    )
-
-
-def build_deepseek_official_fast(
-    env_var: str = DEEPSEEK_API_KEY_ENV,
-    *,
-    allow_placeholder_api_key: bool = False,
-) -> LLMConfig:
-    return LLMConfig(
-        model=DEEPSEEK_CHAT_MODEL,
-        api_key=_resolve_api_key(
-            env_var,
-            allow_placeholder=allow_placeholder_api_key,
-        ),
-        base_url=DEEPSEEK_BASE_URL,
-    )
-
-
-def llm_config_to_sdk_kwargs(config: LLMConfig) -> dict[str, Any]:
-    """Convert repo-side LLMConfig into OpenHands SDK LLM kwargs.
-
-    DeepSeek's official API is OpenAI-compatible, so the SDK-facing model must
-    carry the explicit ``openai/`` provider prefix for LiteLLM routing. We keep
-    ``reasoning_effort="none"`` because the stable AES multi-agent runtime uses
-    ``deepseek-chat`` for both logical profiles to preserve tool and delegate
-    support.
-    """
-
-    kwargs: dict[str, Any] = {
-        'model': SDK_DEEPSEEK_MODEL,
-        'model_canonical_name': DEEPSEEK_RESOLVED_MODEL,
-        'api_key': config.api_key,
-        'base_url': config.base_url,
-        'reasoning_effort': SDK_REASONING_EFFORT,
-    }
-    if config.completion_kwargs:
-        kwargs['litellm_extra_body'] = dict(config.completion_kwargs)
-    return kwargs
-
-
 def build_sdk_deepseek_official_thinking_kwargs(
     env_var: str = DEEPSEEK_API_KEY_ENV,
     *,
     allow_placeholder_api_key: bool = False,
 ) -> dict[str, Any]:
-    return llm_config_to_sdk_kwargs(
-        build_deepseek_official_thinking(
-            env_var,
-            allow_placeholder_api_key=allow_placeholder_api_key,
-        )
-    )
+    """Build OpenHands SDK LLM kwargs for the thinking (orchestrator) profile.
+
+    Uses ``reasoning_effort='medium'`` so that escalation from fast workers to
+    the thinking orchestrator enables deeper reasoning.
+    """
+    return {
+        'model': SDK_DEEPSEEK_MODEL,
+        'model_canonical_name': DEEPSEEK_RESOLVED_MODEL,
+        'api_key': _resolve_api_key(
+            env_var, allow_placeholder=allow_placeholder_api_key
+        ),
+        'base_url': DEEPSEEK_BASE_URL,
+        'reasoning_effort': SDK_REASONING_EFFORT_THINKING,
+    }
 
 
 def build_sdk_deepseek_official_fast_kwargs(
@@ -144,12 +99,19 @@ def build_sdk_deepseek_official_fast_kwargs(
     *,
     allow_placeholder_api_key: bool = False,
 ) -> dict[str, Any]:
-    return llm_config_to_sdk_kwargs(
-        build_deepseek_official_fast(
-            env_var,
-            allow_placeholder_api_key=allow_placeholder_api_key,
-        )
-    )
+    """Build OpenHands SDK LLM kwargs for the fast (worker) profile.
+
+    Uses ``reasoning_effort='none'`` for maximum throughput on node-local tasks.
+    """
+    return {
+        'model': SDK_DEEPSEEK_MODEL,
+        'model_canonical_name': DEEPSEEK_RESOLVED_MODEL,
+        'api_key': _resolve_api_key(
+            env_var, allow_placeholder=allow_placeholder_api_key
+        ),
+        'base_url': DEEPSEEK_BASE_URL,
+        'reasoning_effort': SDK_REASONING_EFFORT_FAST,
+    }
 
 
 def parse_deepseek_response(payload: Mapping[str, Any]) -> ParsedDeepSeekResponse:

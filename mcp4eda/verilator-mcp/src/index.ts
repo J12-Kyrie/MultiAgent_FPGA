@@ -109,13 +109,17 @@ class VerilatorMCPServer {
 
       try {
         const result = await tool.execute(args);
-        
+
         if (!result.success) {
+          const detail =
+            result.error != null && String(result.error).length > 0
+              ? String(result.error)
+              : 'Unknown error (tool returned success=false without a message)';
           return {
             content: [
               {
                 type: 'text',
-                text: `Error: ${result.error}`,
+                text: `Error: ${detail}`,
               },
             ],
             isError: true,
@@ -124,7 +128,7 @@ class VerilatorMCPServer {
 
         // Format response based on tool type
         const response = this.formatToolResponse(name, result.data);
-        
+
         return {
           content: [
             {
@@ -149,15 +153,15 @@ class VerilatorMCPServer {
       try {
         // List simulation artifacts
         const projectDirs = await this.listProjects();
-        
+
         for (const projectId of projectDirs) {
           const projectPath = join(this.resourceDir, projectId);
-          
+
           // Add simulation resources
           const simPath = join(projectPath, 'simulations');
           if (await this.pathExists(simPath)) {
             const simulations = await fs.readdir(simPath);
-            
+
             for (const simId of simulations) {
               resources.push({
                 uri: `simulation://${projectId}/logs/${simId}`,
@@ -193,10 +197,10 @@ class VerilatorMCPServer {
     // Handle resource reading
     this.server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       const { uri } = request.params;
-      
+
       try {
         const content = await this.readResource(uri);
-        
+
         return {
           contents: [
             {
@@ -233,7 +237,7 @@ class VerilatorMCPServer {
   private formatCompileResponse(data: any): string {
     let response = `Compilation ${data.success ? 'Successful' : 'Failed'}\n`;
     response += `Output Directory: ${data.outputDir}\n`;
-    
+
     if (data.executable) {
       response += `Executable: ${data.executable}\n`;
     }
@@ -280,7 +284,7 @@ class VerilatorMCPServer {
       const failed = data.assertions.filter((a: any) => !a.passed).length;
       response += `  Passed: ${passed}\n`;
       response += `  Failed: ${failed}\n`;
-      
+
       if (failed > 0) {
         response += '\nFailed Assertions:\n';
         data.assertions
@@ -327,7 +331,7 @@ class VerilatorMCPServer {
     response += `\nModule Interface:\n`;
     response += `  Inputs: ${data.moduleInfo.ports.filter((p: any) => p.direction === 'input').length}\n`;
     response += `  Outputs: ${data.moduleInfo.ports.filter((p: any) => p.direction === 'output').length}\n`;
-    
+
     if (data.moduleInfo.parameters && data.moduleInfo.parameters.length > 0) {
       response += `  Parameters: ${data.moduleInfo.parameters.length}\n`;
     }

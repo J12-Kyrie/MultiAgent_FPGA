@@ -5,16 +5,20 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from MultiAgent_FPGA.aes_mvp.artifacts import (
+    IntegrationRegressionManifest,
     PlanDAGNode,
     SpecIR,
-    load_default_integration_manifest,
-    load_default_plan_dag,
-    load_default_spec_ir,
 )
 from MultiAgent_FPGA.aes_mvp.policy import (
     AgentExecutionPolicy,
     OrchestratorState,
-    load_default_agent_execution_policy,
+)
+from MultiAgent_FPGA.aes_mvp.synthesis import (
+    DEFAULT_AUTONOMOUS_GOAL,
+    synthesize_agent_execution_policy,
+    synthesize_integration_manifest,
+    synthesize_plan_dag,
+    synthesize_spec_ir,
 )
 
 
@@ -53,18 +57,22 @@ class AESWorkflowOrchestrator:
         spec_ir: SpecIR,
         plan_dag,
         policy: AgentExecutionPolicy,
+        integration_manifest: IntegrationRegressionManifest,
     ) -> None:
         self.spec_ir = spec_ir
         self.plan_dag = plan_dag
         self.policy = policy
-        self.integration_manifest = load_default_integration_manifest()
+        self.integration_manifest = integration_manifest
 
     @classmethod
     def from_defaults(cls) -> 'AESWorkflowOrchestrator':
+        spec_ir = synthesize_spec_ir(system_goal=DEFAULT_AUTONOMOUS_GOAL)
+        plan_dag = synthesize_plan_dag(spec_ir)
         return cls(
-            spec_ir=load_default_spec_ir(),
-            plan_dag=load_default_plan_dag(),
-            policy=load_default_agent_execution_policy(),
+            spec_ir=spec_ir,
+            plan_dag=plan_dag,
+            policy=synthesize_agent_execution_policy(),
+            integration_manifest=synthesize_integration_manifest(spec_ir, plan_dag),
         )
 
     def get_node(self, module_id: str) -> PlanDAGNode:

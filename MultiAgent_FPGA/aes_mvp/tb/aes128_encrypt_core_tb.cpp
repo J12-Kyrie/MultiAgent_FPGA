@@ -32,16 +32,18 @@ struct ProfileConfig {
 };
 
 std::string resolve_requested_path(
+    int argc,
+    char** argv,
     const std::string& requested,
     const std::string& fallback
 ) {
-    return aes_tb::resolve_path(requested, fallback);
+    return aes_tb::resolve_path(argc, argv, requested, fallback);
 }
 
-std::string resolve_named_vector_file(const std::string& file_name) {
+std::string resolve_named_vector_file(int argc, char** argv, const std::string& file_name) {
     const std::string requested = "vectors/aes128/" + file_name;
     const std::string fallback = "../../../../" + requested;
-    return resolve_requested_path(requested, fallback);
+    return resolve_requested_path(argc, argv, requested, fallback);
 }
 
 std::string lookup_value(
@@ -92,6 +94,8 @@ std::vector<VectorCase> load_l1_vectors(int argc, char** argv) {
         aes_tb::get_plusarg_value(argc, argv, "vecfile", "");
     if (!explicit_vecfile.empty()) {
         const std::string resolved = resolve_requested_path(
+            argc,
+            argv,
             explicit_vecfile,
             "../../../../" + explicit_vecfile
         );
@@ -100,15 +104,15 @@ std::vector<VectorCase> load_l1_vectors(int argc, char** argv) {
 
     std::vector<VectorCase> vectors;
     vectors.push_back(load_vector_case(
-        resolve_named_vector_file("aes128_encrypt_core_kat.txt"),
+        resolve_named_vector_file(argc, argv, "aes128_encrypt_core_kat.txt"),
         "kat"
     ));
     vectors.push_back(load_vector_case(
-        resolve_named_vector_file("aes128_encrypt_core_zero.txt"),
+        resolve_named_vector_file(argc, argv, "aes128_encrypt_core_zero.txt"),
         "zero"
     ));
     vectors.push_back(load_vector_case(
-        resolve_named_vector_file("aes128_encrypt_core_regress.txt"),
+        resolve_named_vector_file(argc, argv, "aes128_encrypt_core_regress.txt"),
         "regress"
     ));
     return vectors;
@@ -352,6 +356,8 @@ void run_profile_campaign(
         aes_tb::get_plusarg_value(argc, argv, "campaignVecfile", "");
     if (!campaign_vecfile.empty()) {
         const std::string resolved_campaign_vecfile = resolve_requested_path(
+            argc,
+            argv,
             campaign_vecfile,
             "../../../../" + campaign_vecfile
         );
@@ -395,6 +401,8 @@ int main(int argc, char** argv) {
 
         if (!explicit_vecfile.empty()) {
             const std::string resolved_vecfile = resolve_requested_path(
+                argc,
+                argv,
                 explicit_vecfile,
                 "../../../../" + explicit_vecfile
             );
@@ -426,6 +434,8 @@ int main(int argc, char** argv) {
             }
         } else if (!requested_profile.empty()) {
             const std::string resolved_vecfile = resolve_named_vector_file(
+                argc,
+                argv,
                 "aes128_encrypt_core_l2_" + requested_profile + ".txt"
             );
             const std::map<std::string, std::string> values =

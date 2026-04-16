@@ -1,78 +1,11 @@
+// Key schedule SubWord must use the same S-box as the data path (aes_sbox_lut.vh).
+`include "aes_sbox_lut.vh"
+
 module aes_key_schedule_128 (
     input [127:0] key,
     input [3:0] round_index,
     output reg [127:0] round_key
 );
-    function [7:0] aes_xtime;
-        input [7:0] value;
-        begin
-            aes_xtime = value[7] ? {value[6:0], 1'b0} ^ 8'h1b : {value[6:0], 1'b0};
-        end
-    endfunction
-
-    function [7:0] aes_gf_mul;
-        input [7:0] lhs;
-        input [7:0] rhs;
-        integer i;
-        reg [7:0] multiplicand;
-        reg [7:0] multiplier;
-        reg [7:0] result;
-        begin
-            multiplicand = lhs;
-            multiplier = rhs;
-            result = 8'h00;
-            for (i = 0; i < 8; i = i + 1) begin
-                if (multiplier[0]) begin
-                    result = result ^ multiplicand;
-                end
-                multiplicand = aes_xtime(multiplicand);
-                multiplier = multiplier >> 1;
-            end
-            aes_gf_mul = result;
-        end
-    endfunction
-
-    function [7:0] aes_gf_pow;
-        input [7:0] base;
-        input [7:0] exponent;
-        integer i;
-        reg [7:0] factor;
-        reg [7:0] result;
-        begin
-            factor = base;
-            result = 8'h01;
-            for (i = 0; i < 8; i = i + 1) begin
-                if (exponent[i]) begin
-                    result = aes_gf_mul(result, factor);
-                end
-                factor = aes_gf_mul(factor, factor);
-            end
-            aes_gf_pow = result;
-        end
-    endfunction
-
-    function [7:0] aes_sbox_byte;
-        input [7:0] value;
-        reg [7:0] affine;
-        reg [7:0] inverse;
-        begin
-            if (value == 8'h00) begin
-                aes_sbox_byte = 8'h63;
-            end else begin
-                inverse = aes_gf_pow(value, 8'hfe);
-                affine[0] = inverse[0] ^ inverse[4] ^ inverse[5] ^ inverse[6] ^ inverse[7] ^ 1'b1;
-                affine[1] = inverse[1] ^ inverse[5] ^ inverse[6] ^ inverse[7] ^ inverse[0] ^ 1'b1;
-                affine[2] = inverse[2] ^ inverse[6] ^ inverse[7] ^ inverse[0] ^ inverse[1];
-                affine[3] = inverse[3] ^ inverse[7] ^ inverse[0] ^ inverse[1] ^ inverse[2];
-                affine[4] = inverse[4] ^ inverse[0] ^ inverse[1] ^ inverse[2] ^ inverse[3];
-                affine[5] = inverse[5] ^ inverse[1] ^ inverse[2] ^ inverse[3] ^ inverse[4] ^ 1'b1;
-                affine[6] = inverse[6] ^ inverse[2] ^ inverse[3] ^ inverse[4] ^ inverse[5] ^ 1'b1;
-                affine[7] = inverse[7] ^ inverse[3] ^ inverse[4] ^ inverse[5] ^ inverse[6];
-                aes_sbox_byte = affine;
-            end
-        end
-    endfunction
-
     function [31:0] rot_word;
         input [31:0] value;
         begin
@@ -84,10 +17,10 @@ module aes_key_schedule_128 (
         input [31:0] value;
         begin
             sub_word = {
-                aes_sbox_byte(value[31:24]),
-                aes_sbox_byte(value[23:16]),
-                aes_sbox_byte(value[15:8]),
-                aes_sbox_byte(value[7:0])
+                aes_sbox_lut(value[31:24]),
+                aes_sbox_lut(value[23:16]),
+                aes_sbox_lut(value[15:8]),
+                aes_sbox_lut(value[7:0])
             };
         end
     endfunction

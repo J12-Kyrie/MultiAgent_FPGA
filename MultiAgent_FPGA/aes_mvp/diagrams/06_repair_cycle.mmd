@@ -1,0 +1,30 @@
+flowchart TB
+    Fail["Validation Failed"] --> SelectTarget["Select Repair Target\n(RTL or testbench)"]
+
+    SelectTarget --> WriteReq["Write Repair Request\n(baseline hashes + constraints)"]
+
+    WriteReq --> RepairBatch["Dispatch to\nRepair Agent"]
+
+    subgraph RepairAgent["Repair Agent"]
+        Edit["Read request\n+ edit target file"]
+    end
+
+    RepairBatch --> RepairAgent
+
+    Edit --> Verify["Framework Verify\n(hash changed? tokens present?)"]
+
+    Verify -->|"Pass"| Receipt["Record Edit Receipt"]
+    Verify -->|"Fail"| BudgetCheck
+
+    Receipt --> Reval["Revalidate\n(L0 + L1 re-run)"]
+
+    Reval -->|"Pass"| Promote(["Promote Workspace"])
+    Reval -->|"Fail"| BudgetCheck{"Budget\nremaining?"}
+
+    BudgetCheck -->|"Yes"| RepairBatch
+    BudgetCheck -->|"No"| BlockedState(["BLOCKED"])
+
+    style RepairAgent fill:#fef3c7,stroke:#fbbf24,color:#78350f
+    style BlockedState fill:#fee2e2,stroke:#f87171,color:#7f1d1d
+    style Promote fill:#dcfce7,stroke:#4ade80,color:#14532d
+    style Verify fill:#eff6ff,stroke:#93c5fd,color:#1e3a5f

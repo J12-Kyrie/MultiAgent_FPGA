@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import inspect
 import os
 import sys
 import types
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from importlib import import_module
 from importlib.metadata import PackageNotFoundError, version
@@ -19,9 +18,6 @@ class SDKUnavailableError(RuntimeError):
     """Raised when the external OpenHands SDK runtime package is unavailable."""
 
 
-DEFAULT_SDK_SITE_PACKAGES = Path(
-    '/tmp/pypoetry/virtualenvs/openhands-ai-d1wH8tFh-py3.12/lib/python3.12/site-packages'
-)
 SDK_SITE_PACKAGES_ENV = 'OPENHANDS_SDK_SITE_PACKAGES'
 _SDK_VALIDATION_MODULES = (
     'openhands.sdk.agent',
@@ -36,11 +32,22 @@ _SDK_VALIDATION_MODULES = (
 )
 
 
-def _site_packages_root() -> Path:
+def _optional_shim_site_packages() -> Path | None:
+    """Return a site-packages dir to prepend, or None to use the active interpreter only.
+
+    We **do not** auto-prepend a hardcoded Poetry path: if that directory exists on disk but
+    contains a stale or partial ``openhands-sdk``, it shadows a healthy install in the
+    current conda/venv and imports fail with errors such as
+    ``'>=' not supported between instances of 'NoneType' and 'str'``.
+
+    Set ``OPENHANDS_SDK_SITE_PACKAGES`` explicitly when you must load the SDK from a
+    non-default location (e.g. a specific Poetry virtualenv).
+    """
     override = os.environ.get(SDK_SITE_PACKAGES_ENV)
-    if override:
-        return Path(override).expanduser().resolve()
-    return DEFAULT_SDK_SITE_PACKAGES
+    if not (override and str(override).strip()):
+        return None
+    resolved = Path(override).expanduser().resolve()
+    return resolved if resolved.is_dir() else None
 
 
 @contextmanager
@@ -58,28 +65,15 @@ def _prepend_sys_path(path: Path):
 
 
 def _ensure_sdk_compatibility() -> None:
+    # --- rich compatibility (tracebacks_max_frames kwarg removal) ---
     try:
-        import attr
-        import attr._make as attr_make
-        import attr._next_gen as attr_next_gen
         from rich.logging import RichHandler
-    except Exception:
-        return
-    compatibility_symbols: dict[str, object] = {
-        'Converter': getattr(attr, 'Converter', getattr(attr, 'Factory', object)),
-        'NothingType': getattr(attr, 'NothingType', type(None)),
-        'Factory': getattr(attr, 'Factory', object),
-        'Attribute': getattr(attr, 'Attribute', object),
-        'NOTHING': getattr(attr, 'NOTHING', object()),
-    }
-    for name, value in compatibility_symbols.items():
-        if not hasattr(attr, name):
-            setattr(attr, name, value)  # type: ignore[attr-defined]
-    if not hasattr(attr_make, 'ClassProps'):
-        attr_make.ClassProps = type('ClassProps', (), {})  # type: ignore[attr-defined]
-    if not hasattr(attr_next_gen, 'inspect'):
-        attr_next_gen.inspect = inspect  # type: ignore[attr-defined]
-    if not getattr(RichHandler.__init__, '_aes_mvp_compat', False):
+    except ImportError:
+        RichHandler = None  # type: ignore[assignment,misc]
+
+    if RichHandler is not None and not getattr(
+        RichHandler.__init__, '_aes_mvp_compat', False
+    ):
         original_init = RichHandler.__init__
 
         def _compat_init(self, *args, **kwargs):
@@ -89,6 +83,7 @@ def _ensure_sdk_compatibility() -> None:
         _compat_init._aes_mvp_compat = True  # type: ignore[attr-defined]
         RichHandler.__init__ = _compat_init  # type: ignore[assignment]
 
+    # --- protobuf stub (only when google.protobuf is unavailable) ---
     try:
         import google.protobuf  # type: ignore[import-not-found]
     except Exception:
@@ -143,19 +138,26 @@ class SdkModules:
 
 def discover_sdk_environment() -> SdkEnvironmentStatus:
     try:
-        with _prepend_sys_path(_site_packages_root()):
+        shim_root = _optional_shim_site_packages()
+        ctx = _prepend_sys_path(shim_root) if shim_root is not None else nullcontext()
+        with ctx:
             _ensure_sdk_compatibility()
             for module_name in _SDK_VALIDATION_MODULES:
                 import_module(module_name)
     except Exception as exc:
+        hint = (
+            ' Use the same interpreter as `poetry run` (or run `poetry install` in '
+            'the repo root) so `openhands-sdk` matches `pyproject.toml`. '
+            'Do not set OPENHANDS_SDK_SITE_PACKAGES unless it points at a complete '
+            'site-packages tree for that SDK.'
+        )
         return SdkEnvironmentStatus(
             available=False,
             package_name=None,
             version=None,
             message=(
-                'OpenHands SDK runtime package is unavailable. Install the Poetry '
-                'environment or ensure openhands-sdk is installed before using the '
-                f'AES MVP runtime ({exc}).'
+                'OpenHands SDK runtime package is unavailable. '
+                f'{type(exc).__name__}: {exc}.' + hint
             ),
         )
 
@@ -177,9 +179,14 @@ def load_sdk_modules() -> SdkModules:
         raise SDKUnavailableError(status.message)
 
     try:
-        site_packages_root = _site_packages_root()
-        with _prepend_sys_path(site_packages_root):
-            _ensure_sdk_compatibility()
+        site_packages_root = _optional_shim_site_packages()
+        ctx = (
+            _prepend_sys_path(site_packages_root)
+            if site_packages_root is not None
+            else nullcontext()
+        )
+        with ctx:
+            # _ensure_sdk_compatibility() already ran in discover_sdk_environment() above
             agent_mod = import_module('openhands.sdk.agent')
             conversation_mod = import_module('openhands.sdk.conversation')
             context_mod = import_module('openhands.sdk.context')

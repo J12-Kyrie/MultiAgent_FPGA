@@ -1,31 +1,10 @@
-"""Artifact models and loaders for the AES MVP framework."""
+"""Artifact models and example loaders for the AES MVP framework."""
 
 from __future__ import annotations
 
-import json
 from enum import Enum
-from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-
-from MultiAgent_FPGA.aes_mvp.paths import (
-    INTEGRATION_MANIFEST_PATH,
-    PLAN_DAG_PATH,
-    SPEC_IR_PATH,
-)
-
-FROZEN_AES_NODE_IDS = (
-    'aes_sbox',
-    'aes_key_schedule_128',
-    'aes_round_transform',
-    'aes128_encrypt_core',
-)
-FROZEN_AES_DEPENDENCIES = {
-    'aes_sbox': [],
-    'aes_key_schedule_128': ['aes_sbox'],
-    'aes_round_transform': ['aes_sbox'],
-    'aes128_encrypt_core': ['aes_key_schedule_128', 'aes_round_transform'],
-}
 
 
 class SpecIR(BaseModel):
@@ -62,10 +41,8 @@ class SpecIR(BaseModel):
             raise ValueError('SpecIR.microarchitecture must be iterative_10_round')
         if self.latency_target_cycles != 11:
             raise ValueError('SpecIR.latency_target_cycles must be 11 for the AES MVP')
-        if set(self.module_candidates) != set(FROZEN_AES_NODE_IDS):
-            raise ValueError(
-                'SpecIR.module_candidates must match the frozen AES node taxonomy'
-            )
+        if not self.module_candidates:
+            raise ValueError('SpecIR.module_candidates must not be empty')
         return self
 
 
@@ -101,6 +78,7 @@ class PlanDAGNode(BaseModel):
     criticality: str
     integration_role: str
     pass_criteria: PassCriteria
+    design_context: dict[str, object] = Field(default_factory=dict)
 
 
 class PlanDAG(BaseModel):
@@ -111,15 +89,38 @@ class PlanDAG(BaseModel):
     @model_validator(mode='after')
     def validate_frozen_aes_dag(self) -> 'PlanDAG':
         node_ids = [node.module_id for node in self.nodes]
-        if node_ids != list(FROZEN_AES_NODE_IDS):
-            raise ValueError('PlanDAG.nodes must follow the frozen AES node ordering')
+        if len(node_ids) != len(set(node_ids)):
+            raise ValueError('PlanDAG.node ids must be unique')
+        known = set(node_ids)
         for node in self.nodes:
             if node.language != 'verilog':
                 raise ValueError(f'{node.module_id} must use language=verilog')
-            if node.depends_on != FROZEN_AES_DEPENDENCIES[node.module_id]:
+            if node.module_id in node.depends_on:
+                raise ValueError(f'{node.module_id} cannot depend on itself')
+            unknown = [
+                dependency for dependency in node.depends_on if dependency not in known
+            ]
+            if unknown:
                 raise ValueError(
-                    f'{node.module_id} dependencies do not match the frozen AES DAG'
+                    f'{node.module_id} depends on unknown nodes: {", ".join(unknown)}'
                 )
+        visiting: set[str] = set()
+        visited: set[str] = set()
+        by_id = {node.module_id: node for node in self.nodes}
+
+        def visit(module_id: str) -> None:
+            if module_id in visited:
+                return
+            if module_id in visiting:
+                raise ValueError('PlanDAG dependencies must not contain cycles')
+            visiting.add(module_id)
+            for dependency in by_id[module_id].depends_on:
+                visit(dependency)
+            visiting.remove(module_id)
+            visited.add(module_id)
+
+        for module_id in node_ids:
+            visit(module_id)
         return self
 
 
@@ -165,6 +166,7 @@ class TestbenchContract(BaseModel):
     tb_language: str
     vector_format: str
     checkpoint_names: list[str] = Field(default_factory=list)
+    checkpoint_contract: str | None = None
     plusargs: list[str] = Field(default_factory=list)
     success_rules: list[str] = Field(default_factory=list)
     writable_target: str
@@ -179,6 +181,8 @@ class ModuleDesignBrief(BaseModel):
     dependency_notes: list[str] = Field(default_factory=list)
     vectors: list[str] = Field(default_factory=list)
     checkpoints: list[str] = Field(default_factory=list)
+    implementation_hints: list[str] = Field(default_factory=list)
+    repair_hints: list[str] = Field(default_factory=list)
     skill_paths: list[str] = Field(default_factory=list)
     workspace_strategy: str
 
@@ -186,11 +190,18 @@ class ModuleDesignBrief(BaseModel):
 class NodeWorkspaceState(str, Enum):
     MISSING = 'missing'
     DRAFT_READY = 'draft_ready'
-    GENERATED = 'generated'
     VALIDATED = 'validated'
     PROMOTED = 'promoted'
     REPAIRING = 'repairing'
     BLOCKED = 'blocked'
+    FAILED = 'failed'
+
+
+class ValidationFailurePhase(str, Enum):
+    L0_COMPILE = 'l0_compile'
+    L1_SIM = 'l1_sim'
+    CHECKPOINT_MISSING = 'checkpoint_missing'
+    CHECKPOINT_FAILED = 'checkpoint_failed'
 
 
 class NodeWorkspaceRecord(BaseModel):
@@ -200,11 +211,48 @@ class NodeWorkspaceRecord(BaseModel):
     workspace_root: str
     state: NodeWorkspaceState
     validation_runs: int = Field(default=0, ge=0)
+    repair_edit_count: int = Field(default=0, ge=0)
     contract_paths: dict[str, str]
     draft_paths: dict[str, str]
+    promoted_paths: dict[str, str]
     validation_paths: dict[str, str]
     canonical_targets: list[str]
     snapshot_paths: list[str] = Field(default_factory=list)
+
+
+class RepairContract(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    module_id: str
+    workspace_root: str
+    generation_result_path: str
+    workspace_state_path: str
+    validation_summary_path: str
+    validation_error_path: str
+    failure_phase: ValidationFailurePhase | None = None
+    primary_target_file: str
+    primary_target_reason: str | None = None
+    primary_file_excerpt: str | None = None
+    secondary_target_files: list[str] = Field(default_factory=list)
+    required_first_edit: str
+    first_edit_steps: list[str] = Field(default_factory=list)
+    must_add_tokens: list[str] = Field(default_factory=list)
+    expected_checkpoint: str | None = None
+    error_excerpt: str | None = None
+    simulation_log_excerpt: str | None = None
+    rerun_command: str
+    edit_verification: dict[str, object] = Field(default_factory=dict)
+
+
+class EditReceipt(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+
+    module_id: str
+    workspace_root: str
+    repair_request_path: str
+    edited_files: list[str] = Field(default_factory=list)
+    first_edit_summary: str
+    rerun_command: str
 
 
 class PromotionRecord(BaseModel):
@@ -213,7 +261,7 @@ class PromotionRecord(BaseModel):
     module_id: str
     promoted_at: str
     draft_paths: list[str]
-    canonical_targets: list[str]
+    promoted_targets: list[str]
     snapshot_paths: list[str] = Field(default_factory=list)
     validation_paths: list[str] = Field(default_factory=list)
     checkpoint_summary: dict[str, str] = Field(default_factory=dict)
@@ -238,25 +286,8 @@ class IntegrationRegressionManifest(BaseModel):
 
     @model_validator(mode='after')
     def validate_manifest(self) -> 'IntegrationRegressionManifest':
-        if self.top_module != 'aes128_encrypt_core':
-            raise ValueError('Integration top module must be aes128_encrypt_core')
-        if self.latency_target_cycles != 11:
-            raise ValueError('Integration latency target must be 11 cycles')
+        if self.top_module not in self.required_modules:
+            raise ValueError('Integration top module must appear in required_modules')
+        if self.latency_target_cycles < 1:
+            raise ValueError('Integration latency target must be positive')
         return self
-
-
-def _load_json_model(path: Path, model_cls: type[BaseModel]) -> BaseModel:
-    with path.open('r', encoding='utf-8') as handle:
-        return model_cls.model_validate(json.load(handle))
-
-
-def load_default_spec_ir() -> SpecIR:
-    return _load_json_model(SPEC_IR_PATH, SpecIR)
-
-
-def load_default_plan_dag() -> PlanDAG:
-    return _load_json_model(PLAN_DAG_PATH, PlanDAG)
-
-
-def load_default_integration_manifest() -> IntegrationRegressionManifest:
-    return _load_json_model(INTEGRATION_MANIFEST_PATH, IntegrationRegressionManifest)

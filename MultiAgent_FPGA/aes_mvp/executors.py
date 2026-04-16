@@ -14,7 +14,6 @@ from MultiAgent_FPGA.aes_mvp.artifacts import (
     IntegrationRegressionManifest,
     ModuleRunResult,
     PlanDAGNode,
-    load_default_integration_manifest,
 )
 from MultiAgent_FPGA.aes_mvp.executor_contracts import (
     ResolvedIntegrationRegressionInputs,
@@ -25,6 +24,23 @@ from MultiAgent_FPGA.aes_mvp.executor_contracts import (
 )
 
 CHECKPOINT_PREFIX = 'CHECKPOINT|'
+
+
+def _run_async(coro):
+    """Run an async coroutine from synchronous code, handling nested event loops."""
+    import asyncio
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop is None:
+        return asyncio.run(coro)
+    # Already inside an event loop — run in a thread to avoid RuntimeError
+    import concurrent.futures
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(asyncio.run, coro).result()
 
 
 class SupportsVerilatorAdapter(Protocol):
@@ -75,19 +91,6 @@ class CheckpointParser:
         return self.parse_text(path.read_text(encoding='utf-8'))
 
 
-class WaveformLocator:
-    """Locate the generated waveform for a simulation output directory."""
-
-    def find(self, output_dir: Path) -> Path:
-        preferred = output_dir / 'simulation.vcd'
-        if preferred.is_file():
-            return preferred
-        matches = sorted(output_dir.glob('*.vcd'))
-        if not matches:
-            raise FileNotFoundError(f'No waveform file found in {output_dir}')
-        return matches[0]
-
-
 class RunReportWriter:
     """Write structured run artifacts next to the simulation outputs."""
 
@@ -122,14 +125,17 @@ class RunReportWriter:
 
 class _BaseExecutor:
     def __init__(
-        self, *, adapter: SupportsVerilatorAdapter, package_root: Path
+        self,
+        *,
+        adapter: SupportsVerilatorAdapter,
+        package_root: Path,
+        integration_manifest: IntegrationRegressionManifest | None = None,
     ) -> None:
         self.adapter = adapter
         self.package_root = package_root
         self.checkpoints = CheckpointParser()
-        self.waveforms = WaveformLocator()
         self.writer = RunReportWriter(package_root=package_root)
-        self.integration_manifest = load_default_integration_manifest()
+        self.integration_manifest = integration_manifest
 
     def _resolve(self, value: str) -> Path:
         return (self.package_root / value).resolve()
@@ -143,7 +149,7 @@ class _BaseExecutor:
         resolved = resolve_node_compile_inputs(
             package_root=self.package_root,
             node=node,
-            manifest=self.integration_manifest if manifest is None else manifest,
+            manifest=manifest if manifest is not None else self.integration_manifest,
         )
         return list(resolved.compile_files)
 
@@ -198,16 +204,18 @@ class _BaseExecutor:
         )
         return preferred
 
+    _CAMPAIGN_PROFILE_SEEDS: dict[str, int] = {
+        'rand_small': 1001,
+        'rand_medium': 2001,
+        'back_to_back': 3001,
+        'mid_reset': 4001,
+    }
+
     def _aes128_campaign_seed(self, profile: str) -> int:
-        if profile == 'rand_small':
-            return 1001
-        if profile == 'rand_medium':
-            return 2001
-        if profile == 'back_to_back':
-            return 3001
-        if profile == 'mid_reset':
-            return 4001
-        raise ValueError(f'Unsupported AES campaign profile: {profile}')
+        seed = self._CAMPAIGN_PROFILE_SEEDS.get(profile)
+        if seed is None:
+            raise ValueError(f'Unsupported AES campaign profile: {profile}')
+        return seed
 
     def _next_rng(self, state: int) -> int:
         state &= (1 << 64) - 1
@@ -311,11 +319,14 @@ class L0Executor(_BaseExecutor):
         *,
         manifest: IntegrationRegressionManifest | None = None,
     ) -> WrittenReport:
-        import asyncio
-
-        build_output_dir = self._ensure_directory(self._resolve(node.build_output_dir))
+        build_output_dir = self._resolve(node.build_output_dir)
+        # Clean stale artifacts from previous compiles to prevent linker
+        # errors caused by orphaned .o/.d files referencing removed headers.
+        if build_output_dir.exists():
+            shutil.rmtree(build_output_dir)
+        build_output_dir = self._ensure_directory(build_output_dir)
         compile_files = self._rtl_and_tb_files(node, manifest=manifest)
-        compile_result = asyncio.run(
+        compile_result = _run_async(
             self.adapter.compile(
                 files=compile_files,
                 top_module=node.top_module,
@@ -335,35 +346,54 @@ class L0Executor(_BaseExecutor):
 
 
 class L1Executor(_BaseExecutor):
-    """Run the fixed L1 compile+simulate gate and parse checkpoints."""
+    """Run the fixed L1 compile+simulate gate and parse checkpoints.
+
+    When ``skip_compile=True``, the caller must supply ``reuse_compile_result``
+    from a successful :meth:`L0Executor.run` on the same ``node``/manifest and
+    an unchanged ``build_output_dir`` (``_run_node`` hot path).
+    """
 
     def run(
         self,
         node: PlanDAGNode,
         *,
         manifest: IntegrationRegressionManifest | None = None,
+        skip_compile: bool = False,
+        reuse_compile_result: str | None = None,
     ) -> WrittenReport:
-        import asyncio
-
+        """Run L1. Set ``skip_compile`` to avoid a second Verilator compile after L0."""
         build_output_dir = self._ensure_directory(self._resolve(node.build_output_dir))
         compile_files = self._rtl_and_tb_files(node, manifest=manifest)
-        compile_result = asyncio.run(
-            self.adapter.compile(
-                files=compile_files,
-                top_module=node.top_module,
-                output_dir=str(build_output_dir),
+        if skip_compile:
+            if reuse_compile_result is None:
+                raise ValueError(
+                    'reuse_compile_result is required when skip_compile=True '
+                    '(pass the compile log/text from a successful L0Executor.run).'
+                )
+            compile_result = reuse_compile_result
+        else:
+            compile_result = _run_async(
+                self.adapter.compile(
+                    files=compile_files,
+                    top_module=node.top_module,
+                    output_dir=str(build_output_dir),
+                )
             )
-        )
         self._mirror_rtl_for_simulation(
             build_output_dir=build_output_dir,
             compile_files=compile_files,
         )
         sim_output_dir = self._ensure_directory(self._resolve(node.sim_output_dir))
-        sim_result = asyncio.run(
+        sim_result = _run_async(
             self.adapter.simulate(
                 design=str(build_output_dir),
                 top_module=node.top_module,
                 output_dir=str(sim_output_dir),
+                extra_arguments={
+                    'plusargs': {
+                        'aes_mvp_package_root': str(self.package_root.resolve()),
+                    },
+                },
             )
         )
         log_path = sim_output_dir / 'simulation.log'
@@ -397,8 +427,6 @@ class L2CampaignExecutor(_BaseExecutor):
         seed: int | None = None,
         manifest: IntegrationRegressionManifest | None = None,
     ) -> WrittenReport:
-        import asyncio
-
         resolved = resolve_l2_campaign_inputs(
             package_root=self.package_root,
             node=node,
@@ -424,13 +452,17 @@ class L2CampaignExecutor(_BaseExecutor):
             build_output_dir=self._resolve(node.build_output_dir),
             compile_files=compile_inputs,
         )
-        sim_result = asyncio.run(
+        plusargs = {
+            'aes_mvp_package_root': str(self.package_root.resolve()),
+            **resolved.plusargs,
+        }
+        sim_result = _run_async(
             self.adapter.simulate(
                 design=str(self._resolve(node.build_output_dir)),
                 top_module=node.top_module,
                 output_dir=str(sim_output_dir),
                 extra_arguments={
-                    'plusargs': resolved.plusargs,
+                    'plusargs': plusargs,
                     **(
                         {'campaignVecfile': str(campaign_vecfile)}
                         if campaign_vecfile is not None
@@ -525,15 +557,13 @@ class IntegrationRegressionExecutor(_BaseExecutor):
         self,
         manifest: IntegrationRegressionManifest,
     ) -> WrittenReport:
-        import asyncio
-
         resolved: ResolvedIntegrationRegressionInputs = (
             resolve_integration_regression_inputs(
                 package_root=self.package_root,
                 manifest=manifest,
             )
         )
-        compile_result = asyncio.run(
+        compile_result = _run_async(
             self.adapter.compile(
                 files=list(resolved.compile_files),
                 top_module=resolved.top_module,
@@ -570,16 +600,25 @@ class IntegrationRegressionExecutor(_BaseExecutor):
         aggregate_failed: list[str] = []
         aggregate_passed: list[str] = []
 
+        package_plusargs = {'aes_mvp_package_root': str(self.package_root.resolve())}
         for campaign_name, output_dir, extra_arguments in campaign_specs:
             campaign_output_dir = self._ensure_directory(output_dir)
             simulate_arguments: dict = {
                 'useExistingBuild': True,
                 'autoGenerateTestbench': False,
                 'enableWaveform': True,
+                'plusargs': dict(package_plusargs),
             }
             if extra_arguments:
-                simulate_arguments.update(extra_arguments)
-            sim_result = asyncio.run(
+                for key, value in extra_arguments.items():
+                    if key == 'plusargs' and isinstance(value, dict):
+                        simulate_arguments['plusargs'] = {
+                            **package_plusargs,
+                            **value,
+                        }
+                    elif key != 'plusargs':
+                        simulate_arguments[key] = value
+            sim_result = _run_async(
                 self.adapter.simulate(
                     design=str(self._ensure_directory(resolved.build_output_dir)),
                     top_module=resolved.top_module,

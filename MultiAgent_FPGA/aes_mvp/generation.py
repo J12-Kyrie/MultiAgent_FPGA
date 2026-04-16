@@ -1,7 +1,8 @@
-"""Generation-first contracts and draft-workspace helpers for the AES MVP."""
+"""Generation-first contracts and draft-workspace helpers."""
 
 from __future__ import annotations
 
+import hashlib
 import json
 import shutil
 from datetime import UTC, datetime
@@ -9,126 +10,33 @@ from pathlib import Path
 from typing import Any
 
 from MultiAgent_FPGA.aes_mvp.artifacts import (
+    EditReceipt,
     ModuleContract,
     ModuleDesignBrief,
     NodeWorkspaceRecord,
     NodeWorkspaceState,
     PlanDAG,
     PlanDAGNode,
-    PortSpec,
     PromotionRecord,
+    RepairContract,
     SpecIR,
     TestbenchContract,
 )
 from MultiAgent_FPGA.aes_mvp.executor_contracts import summarize_required_checkpoints
-from MultiAgent_FPGA.aes_mvp.skill_refs import select_skill_refs
+from MultiAgent_FPGA.aes_mvp.paths import PACKAGE_ROOT
+from MultiAgent_FPGA.aes_mvp.synthesis import ContractCompiler, resolve_vector_path
 
 DEFAULT_REPAIR_BUDGET = 2
+TOP_MODULE_REPAIR_BUDGET = 3
+_DEFAULT_FILE_EXCERPT_LINES = 120
+_TB_SUPPORT_HEADERS = ('aes_tb_common.hpp',)
+_RTL_INCLUDE_SUFFIXES = ('.vh', '.svh')
 
-_MODULE_SUMMARIES = {
-    'aes_sbox': 'Implement the combinational AES S-box byte substitution.',
-    'aes_key_schedule_128': 'Implement the AES-128 round-key expansion helper.',
-    'aes_round_transform': 'Implement one AES round transform with optional final-round bypass.',
-    'aes128_encrypt_core': 'Implement the iterative AES-128 encrypt core with block-level handshake.',
-}
 
-_MODULE_PORTS = {
-    'aes_sbox': [
-        ('in_byte', 'input', 8, 'Input byte to substitute.'),
-        ('out_byte', 'output', 8, 'Substituted output byte.'),
-    ],
-    'aes_key_schedule_128': [
-        (
-            'key',
-            'input',
-            128,
-            'Current key input used to derive the requested round key.',
-        ),
-        ('round_index', 'input', 4, 'Round selector in the range 0..10.'),
-        (
-            'round_key',
-            'output',
-            128,
-            'Derived AES-128 round key for the requested round.',
-        ),
-    ],
-    'aes_round_transform': [
-        ('state_in', 'input', 128, 'Input AES state before the round transform.'),
-        ('round_key', 'input', 128, 'Round key for AddRoundKey.'),
-        ('final_round', 'input', 1, 'When asserted, bypass MixColumns.'),
-        ('sub_bytes_state', 'output', 128, 'Intermediate state after SubBytes.'),
-        ('shift_rows_state', 'output', 128, 'Intermediate state after ShiftRows.'),
-        (
-            'mix_columns_state',
-            'output',
-            128,
-            'Intermediate state after MixColumns or bypass.',
-        ),
-        ('state_out', 'output', 128, 'Final state after the round transform.'),
-    ],
-    'aes128_encrypt_core': [
-        ('clk', 'input', 1, 'Primary rising-edge clock.'),
-        ('rst_n', 'input', 1, 'Active-low reset.'),
-        ('start', 'input', 1, 'Start pulse sampled when busy is low.'),
-        ('key', 'input', 128, 'AES-128 key input.'),
-        ('plaintext', 'input', 128, 'AES plaintext input block.'),
-        ('busy', 'output', 1, 'Busy indicator for the active encryption window.'),
-        ('done', 'output', 1, 'Single-cycle completion pulse.'),
-        ('ciphertext', 'output', 128, 'Ciphertext output block.'),
-    ],
-}
-
-_DESIGN_GOALS = {
-    'aes_sbox': [
-        'Preserve the frozen aes_sbox interface exactly.',
-        'Implement pure combinational substitution with no sequential state.',
-        'Produce CHK_SBOX_MATCH through the self-checking .cpp testbench.',
-    ],
-    'aes_key_schedule_128': [
-        'Preserve the frozen aes_key_schedule_128 interface exactly.',
-        'Support round_index values 0 through 10.',
-        'Produce CHK_ROUNDKEY_MATCH through the self-checking .cpp testbench.',
-    ],
-    'aes_round_transform': [
-        'Preserve the frozen aes_round_transform interface exactly.',
-        'Support both normal rounds and final-round bypass of MixColumns.',
-        'Produce CHK_ROUND_STATE_MATCH through the self-checking .cpp testbench.',
-    ],
-    'aes128_encrypt_core': [
-        'Preserve the frozen top-level handshake and signal names exactly.',
-        'Honor the 11-cycle latency target and ignore start while busy.',
-        'Produce the frozen top-level checkpoint set through the self-checking .cpp testbench.',
-    ],
-}
-
-_TB_VECTOR_FORMATS = {
-    'aes_sbox': 'Exhaustive byte sweep plus optional vecfile with in_hex/out_hex pairs.',
-    'aes_key_schedule_128': 'Key/value file with round_key_0 through round_key_10 entries.',
-    'aes_round_transform': 'Key/value file describing intermediate round states and outputs.',
-    'aes128_encrypt_core': 'Key/value file with key, plaintext, ciphertext, and optional L2 profiles.',
-}
-
-_TB_PLUSARGS = {
-    'aes_sbox': ['+profile=rand_small|rand_medium', '+cases', '+seed', '+vecfile'],
-    'aes_key_schedule_128': [
-        '+profile=rand_small|rand_medium',
-        '+cases',
-        '+seed',
-        '+vecfile',
-    ],
-    'aes_round_transform': [
-        '+profile=rand_small|rand_medium',
-        '+cases',
-        '+seed',
-        '+vecfile',
-    ],
-    'aes128_encrypt_core': [
-        '+profile=rand_small|rand_medium|back_to_back|mid_reset',
-        '+cases',
-        '+seed',
-        '+vecfile',
-    ],
-}
+def repair_budget_for_node(node: PlanDAGNode) -> int:
+    if node.integration_role in ('top', 'sink'):
+        return TOP_MODULE_REPAIR_BUDGET
+    return DEFAULT_REPAIR_BUDGET
 
 
 def _json_dump(path: Path, payload: dict[str, Any]) -> Path:
@@ -137,58 +45,27 @@ def _json_dump(path: Path, payload: dict[str, Any]) -> Path:
     return path
 
 
-def build_module_contract(*, spec_ir: SpecIR, node: PlanDAGNode) -> ModuleContract:
-    del spec_ir
-    ports = [
-        PortSpec(
-            name=name,
-            direction=direction,
-            width=width,
-            description=description,
-        )
-        for name, direction, width, description in _MODULE_PORTS[node.module_id]
-    ]
-    dependency_interfaces = [
-        f'{dependency} must remain compatible with the frozen AES MVP taxonomy.'
-        for dependency in node.depends_on
-    ]
-    return ModuleContract(
-        module_id=node.module_id,
-        summary=_MODULE_SUMMARIES[node.module_id],
-        ports=ports,
-        dependencies=list(node.depends_on),
-        dependency_interfaces=dependency_interfaces,
-        required_checkpoints=list(node.pass_criteria.l1.coverage_checkpoints),
-        prohibited_constructs=[
-            'Do not introduce SystemVerilog-only syntax.',
-            'Do not rename frozen ports or checkpoint identifiers.',
-            'Do not edit cross-module architecture from a node-local generation task.',
-        ],
-        writable_targets=[*node.rtl_files, node.tb_file],
-        canonical_rtl_targets=list(node.rtl_files),
-        canonical_tb_target=node.tb_file,
-    )
+def _file_digest(path: Path) -> str:
+    digest = hashlib.sha256()
+    digest.update(path.read_bytes())
+    return digest.hexdigest()
+
+
+def build_module_contract(
+    *, spec_ir: SpecIR, plan_dag: PlanDAG, node: PlanDAGNode
+) -> ModuleContract:
+    compiler = ContractCompiler(spec_ir=spec_ir, plan_dag=plan_dag)
+    return compiler.compile_module_contract(node)
 
 
 def build_testbench_contract(
     *,
     spec_ir: SpecIR,
+    plan_dag: PlanDAG,
     node: PlanDAGNode,
 ) -> TestbenchContract:
-    del spec_ir
-    return TestbenchContract(
-        module_id=node.module_id,
-        tb_language='cpp',
-        vector_format=_TB_VECTOR_FORMATS[node.module_id],
-        checkpoint_names=list(node.pass_criteria.l1.coverage_checkpoints),
-        plusargs=list(_TB_PLUSARGS[node.module_id]),
-        success_rules=[
-            'Emit the required CHECKPOINT lines to simulation.log.',
-            'Remain self-checking and deterministic for frozen vectors.',
-            'Do not rely on auto-generated testbenches.',
-        ],
-        writable_target=node.tb_file,
-    )
+    compiler = ContractCompiler(spec_ir=spec_ir, plan_dag=plan_dag)
+    return compiler.compile_testbench_contract(node)
 
 
 def build_module_design_brief(
@@ -197,46 +74,28 @@ def build_module_design_brief(
     plan_dag: PlanDAG,
     node: PlanDAGNode,
 ) -> ModuleDesignBrief:
-    dependency_notes = []
-    for dependency in node.depends_on:
-        dependency_node = next(
-            candidate
-            for candidate in plan_dag.nodes
-            if candidate.module_id == dependency
-        )
-        dependency_notes.append(
-            f'{dependency} must remain compatible with {dependency_node.top_module} and '
-            f'its frozen checkpoint contract {dependency_node.pass_criteria.l1.checkpoint_contract}.'
-        )
-    skill_paths = [
-        str(ref.path)
-        for ref in select_skill_refs(
-            'aes_verilator_profile',
-            'verilog_verilator',
-            'deepseek_official_sdk',
-            'verilator_mcp_setup',
-        )
-    ]
-    return ModuleDesignBrief(
-        module_id=node.module_id,
-        summary=(
-            f'Generate the {node.module_id} RTL/TB pair for the {spec_ir.variant} '
-            f'{spec_ir.operation} MVP.'
-        ),
-        design_goals=list(_DESIGN_GOALS[node.module_id]),
-        dependency_notes=dependency_notes,
-        vectors=[node.pass_criteria.l1.vector_set],
-        checkpoints=list(node.pass_criteria.l1.coverage_checkpoints),
-        skill_paths=skill_paths,
-        workspace_strategy=(
-            'Generate and edit only draft files under the session workspace. '
-            'Promote to canonical RTL/TB only after L0 and L1 pass.'
-        ),
-    )
+    compiler = ContractCompiler(spec_ir=spec_ir, plan_dag=plan_dag)
+    return compiler.compile_design_brief(node)
 
 
 def conversation_workspace_root(report_root: Path, module_id: str) -> Path:
     return (report_root / 'workspaces' / module_id).resolve()
+
+
+def conversation_promoted_root(report_root: Path) -> Path:
+    return (report_root / 'promoted').resolve()
+
+
+def workspace_promoted_root(workspace_root: Path) -> Path:
+    return conversation_promoted_root(workspace_root.parent.parent)
+
+
+def workspace_repair_request_path(workspace_root: Path) -> Path:
+    return (workspace_root / 'repair_request.json').resolve()
+
+
+def workspace_edit_receipt_path(workspace_root: Path) -> Path:
+    return (workspace_root / 'edit_receipt.json').resolve()
 
 
 def _draft_rtl_paths(node: PlanDAGNode, workspace_root: Path) -> dict[str, str]:
@@ -252,6 +111,49 @@ def _draft_tb_path(node: PlanDAGNode, workspace_root: Path) -> str:
     return str((workspace_root / 'draft' / 'tb' / Path(node.tb_file).name).resolve())
 
 
+def _promoted_rtl_paths(node: PlanDAGNode, promoted_root: Path) -> dict[str, str]:
+    return {
+        Path(rtl).name: str(
+            (promoted_root / node.module_id / 'rtl' / Path(rtl).name).resolve()
+        )
+        for rtl in node.rtl_files
+    }
+
+
+def _promoted_tb_path(node: PlanDAGNode, promoted_root: Path) -> str:
+    return str(
+        (promoted_root / node.module_id / 'tb' / Path(node.tb_file).name).resolve()
+    )
+
+
+def _stage_rtl_include_files(target_dir: Path) -> list[str]:
+    """Copy .vh/.svh include files from source RTL into the workspace draft RTL dir."""
+    staged: list[str] = []
+    target_dir.mkdir(parents=True, exist_ok=True)
+    rtl_source = PACKAGE_ROOT / 'rtl'
+    if not rtl_source.is_dir():
+        return staged
+    for source in rtl_source.iterdir():
+        if source.suffix.lower() in _RTL_INCLUDE_SUFFIXES and source.is_file():
+            target = (target_dir / source.name).resolve()
+            shutil.copyfile(source, target)
+            staged.append(str(target))
+    return staged
+
+
+def _stage_tb_support_headers(target_dir: Path) -> list[str]:
+    staged: list[str] = []
+    target_dir.mkdir(parents=True, exist_ok=True)
+    for name in _TB_SUPPORT_HEADERS:
+        source = (PACKAGE_ROOT / 'tb' / name).resolve()
+        if not source.is_file():
+            continue
+        target = (target_dir / name).resolve()
+        shutil.copyfile(source, target)
+        staged.append(str(target))
+    return staged
+
+
 def _validation_paths(node: PlanDAGNode, workspace_root: Path) -> dict[str, str]:
     validation_root = (workspace_root / 'validation').resolve()
     return {
@@ -261,6 +163,10 @@ def _validation_paths(node: PlanDAGNode, workspace_root: Path) -> dict[str, str]
         ),
         'simulation_log': str((validation_root / 'sim' / 'simulation.log').resolve()),
         'waveform': str((validation_root / 'sim' / 'simulation.vcd').resolve()),
+        'validation_summary': str(
+            (validation_root / 'validation_summary.json').resolve()
+        ),
+        'validation_error': str((validation_root / 'validation_error.json').resolve()),
     }
 
 
@@ -293,124 +199,65 @@ def build_node_workspace_record(
             'rtl': json.dumps(_draft_rtl_paths(node, workspace_root), sort_keys=True),
             'tb': _draft_tb_path(node, workspace_root),
         },
+        promoted_paths={
+            'rtl': json.dumps(
+                _promoted_rtl_paths(node, workspace_promoted_root(workspace_root)),
+                sort_keys=True,
+            ),
+            'tb': _promoted_tb_path(node, workspace_promoted_root(workspace_root)),
+        },
         validation_paths=_validation_paths(node, workspace_root),
-        canonical_targets=[
-            *[str(path) for path in node.rtl_files],
-            node.tb_file,
-        ],
+        canonical_targets=[*list(node.rtl_files), node.tb_file],
         snapshot_paths=list(snapshot_paths),
     )
 
 
-def _module_scaffold(node: PlanDAGNode) -> str:
-    if node.module_id == 'aes_sbox':
-        return '\n'.join(
-            [
-                'module aes_sbox (',
-                '    input [7:0] in_byte,',
-                '    output reg [7:0] out_byte',
-                ');',
-                '    // TODO: replace scaffold logic with the AES S-box implementation.',
-                '    always @* begin',
-                "        out_byte = 8'h00;",
-                '    end',
-                'endmodule',
-                '',
-            ]
-        )
-    if node.module_id == 'aes_key_schedule_128':
-        return '\n'.join(
-            [
-                'module aes_key_schedule_128 (',
-                '    input [127:0] key,',
-                '    input [3:0] round_index,',
-                '    output reg [127:0] round_key',
-                ');',
-                '    // TODO: replace scaffold logic with the AES-128 key schedule.',
-                '    always @* begin',
-                "        round_key = key ^ {124'h0, round_index};",
-                '    end',
-                'endmodule',
-                '',
-            ]
-        )
-    if node.module_id == 'aes_round_transform':
-        return '\n'.join(
-            [
-                'module aes_round_transform (',
-                '    input [127:0] state_in,',
-                '    input [127:0] round_key,',
-                '    input final_round,',
-                '    output reg [127:0] sub_bytes_state,',
-                '    output reg [127:0] shift_rows_state,',
-                '    output reg [127:0] mix_columns_state,',
-                '    output reg [127:0] state_out',
-                ');',
-                '    // TODO: replace scaffold logic with the AES round transform.',
-                '    always @* begin',
-                '        sub_bytes_state = state_in;',
-                '        shift_rows_state = state_in;',
-                '        mix_columns_state = state_in;',
-                "        state_out = state_in ^ round_key ^ {127'h0, final_round};",
-                '    end',
-                'endmodule',
-                '',
-            ]
-        )
-    return '\n'.join(
-        [
-            'module aes128_encrypt_core (',
-            '    input clk,',
-            '    input rst_n,',
-            '    input start,',
-            '    input [127:0] key,',
-            '    input [127:0] plaintext,',
-            '    output reg busy,',
-            '    output reg done,',
-            '    output reg [127:0] ciphertext',
-            ');',
-            '    // TODO: replace scaffold logic with the iterative AES-128 encrypt core.',
-            '    always @(posedge clk or negedge rst_n) begin',
-            '        if (!rst_n) begin',
-            "            busy <= 1'b0;",
-            "            done <= 1'b0;",
-            "            ciphertext <= 128'h0;",
-            '        end else begin',
-            "            busy <= 1'b0;",
-            "            done <= 1'b0;",
-            '            if (start) begin',
-            '                ciphertext <= plaintext ^ key;',
-            "                done <= 1'b1;",
-            '            end',
-            '        end',
-            '    end',
-            'endmodule',
-            '',
-        ]
-    )
+def _validation_error_message(workspace_record: NodeWorkspaceRecord) -> str | None:
+    for key in ('validation_summary', 'validation_error'):
+        candidate = Path(workspace_record.validation_paths[key])
+        if not candidate.is_file():
+            continue
+        try:
+            payload = json.loads(candidate.read_text(encoding='utf-8'))
+        except json.JSONDecodeError:
+            continue
+        error = payload.get('error')
+        if isinstance(error, dict):
+            message = error.get('message')
+            if isinstance(message, str) and message.strip():
+                return message
+    return None
 
 
-def _tb_scaffold(node: PlanDAGNode) -> str:
-    top_header = f'V{node.top_module}.h'
-    top_class = f'V{node.top_module}'
-    return '\n'.join(
-        [
-            '#include <verilated.h>',
-            '',
-            '#include <iostream>',
-            '',
-            f'#include "{top_header}"',
-            '',
-            'int main(int argc, char** argv) {',
-            '    Verilated::commandArgs(argc, argv);',
-            f'    {top_class} dut;',
-            '    dut.eval();',
-            '    std::cout << "TODO: scaffold testbench, no checkpoints emitted yet." << std::endl;',
-            '    return 0;',
-            '}',
-            '',
-        ]
-    )
+def _repair_guidance(
+    *,
+    workspace_record: NodeWorkspaceRecord,
+    node: PlanDAGNode,
+    missing_checkpoints: list[str],
+    failed_checkpoints: list[str],
+) -> list[str]:
+    guidance: list[str] = []
+    if missing_checkpoints:
+        guidance.append(
+            'Update the draft testbench so it emits the required CHECKPOINT lines '
+            f'using the frozen contract {node.pass_criteria.l1.checkpoint_contract}: '
+            + ', '.join(missing_checkpoints)
+        )
+    if failed_checkpoints:
+        guidance.append(
+            'Fix the first failed checkpoint before broader cleanup: '
+            + ', '.join(failed_checkpoints)
+        )
+    error_message = _validation_error_message(workspace_record)
+    if error_message and 'Compilation failed' in error_message:
+        guidance.append(
+            'Resolve compile or elaboration warnings/errors before rerunning the executor command.'
+        )
+    if not guidance:
+        guidance.append(
+            'Read the design brief and validation artifacts, make one focused draft edit, then rerun the executor command.'
+        )
+    return guidance
 
 
 def initialize_node_workspace(
@@ -420,8 +267,14 @@ def initialize_node_workspace(
     node: PlanDAGNode,
     workspace_root: Path,
 ) -> NodeWorkspaceRecord:
-    module_contract = build_module_contract(spec_ir=spec_ir, node=node)
-    testbench_contract = build_testbench_contract(spec_ir=spec_ir, node=node)
+    module_contract = build_module_contract(
+        spec_ir=spec_ir, plan_dag=plan_dag, node=node
+    )
+    testbench_contract = build_testbench_contract(
+        spec_ir=spec_ir,
+        plan_dag=plan_dag,
+        node=node,
+    )
     design_brief = build_module_design_brief(
         spec_ir=spec_ir,
         plan_dag=plan_dag,
@@ -449,24 +302,38 @@ def initialize_node_workspace(
         design_brief.model_dump(),
     )
 
+    # Pre-populate drafts from verified memory via MemoryStore.
+    from MultiAgent_FPGA.aes_mvp.memory import MemoryStore
+
+    store = MemoryStore()
+    written = store.populate_workspace(node.module_id, workspace_root)
+
+    # Also populate any additional RTL paths (e.g. top-module includes both files)
     draft_rtl_targets = _draft_rtl_paths(node, workspace_root)
     for draft_path in draft_rtl_targets.values():
         candidate = Path(draft_path)
-        candidate.parent.mkdir(parents=True, exist_ok=True)
-        if not candidate.exists():
-            candidate.write_text(_module_scaffold(node), encoding='utf-8')
+        if candidate != written.get('rtl') and not candidate.exists():
+            candidate.parent.mkdir(parents=True, exist_ok=True)
+            if written.get('rtl') and written['rtl'].exists():
+                shutil.copy2(str(written['rtl']), str(candidate))
+
+    # Stage RTL include files (.vh/.svh) into draft RTL directory.
+    draft_rtl_dir = list(draft_rtl_targets.values())[0] if draft_rtl_targets else None
+    if draft_rtl_dir:
+        _stage_rtl_include_files(Path(draft_rtl_dir).parent)
 
     draft_tb_path = Path(_draft_tb_path(node, workspace_root))
-    draft_tb_path.parent.mkdir(parents=True, exist_ok=True)
-    if not draft_tb_path.exists():
-        draft_tb_path.write_text(_tb_scaffold(node), encoding='utf-8')
+    if draft_tb_path != written.get('tb'):
+        draft_tb_path.parent.mkdir(parents=True, exist_ok=True)
+    _stage_tb_support_headers(draft_tb_path.parent)
 
     record = build_node_workspace_record(
         node=node,
         workspace_root=workspace_root,
         previous=previous,
     )
-    record = record.model_copy(update={'state': NodeWorkspaceState.DRAFT_READY})
+    if previous is None:
+        record = record.model_copy(update={'state': NodeWorkspaceState.DRAFT_READY})
     _json_dump(workspace_state_path, record.model_dump())
     return record
 
@@ -476,6 +343,24 @@ def load_workspace_record(workspace_root: Path) -> NodeWorkspaceRecord:
     return NodeWorkspaceRecord.model_validate_json(path.read_text(encoding='utf-8'))
 
 
+def load_repair_contract(workspace_root: Path) -> RepairContract:
+    path = (
+        workspace_root
+        if workspace_root.is_file()
+        else workspace_repair_request_path(workspace_root)
+    )
+    return RepairContract.model_validate_json(path.read_text(encoding='utf-8'))
+
+
+def clear_repair_artifacts(workspace_root: Path) -> None:
+    for candidate in (
+        workspace_repair_request_path(workspace_root),
+        workspace_edit_receipt_path(workspace_root),
+    ):
+        if candidate.is_file():
+            candidate.unlink()
+
+
 def write_workspace_record(record: NodeWorkspaceRecord) -> Path:
     return _json_dump(
         Path(record.workspace_root) / 'workspace_state.json',
@@ -483,19 +368,393 @@ def write_workspace_record(record: NodeWorkspaceRecord) -> Path:
     )
 
 
+def _file_contains_tokens(path: Path, tokens: list[str]) -> bool:
+    if not tokens or not path.is_file():
+        return False
+    contents = path.read_text(encoding='utf-8')
+    return all(token in contents for token in tokens)
+
+
+def _materialize_checkpoint_contract(
+    checkpoint_contract: str | None,
+    checkpoint_name: str | None,
+) -> str | None:
+    if checkpoint_name:
+        if checkpoint_contract:
+            materialized = checkpoint_contract.replace('CHK_*', checkpoint_name)
+            if checkpoint_name in materialized:
+                return materialized
+        return f'CHECKPOINT|{checkpoint_name}|PASS|<detail>'
+    if checkpoint_contract:
+        return checkpoint_contract
+    return None
+
+
+def _checkpoint_contract_prefixes(
+    *,
+    node: PlanDAGNode,
+    checkpoint_names: list[str],
+) -> list[str]:
+    prefixes: list[str] = []
+    for checkpoint_name in checkpoint_names:
+        materialized = _materialize_checkpoint_contract(
+            node.pass_criteria.l1.checkpoint_contract,
+            checkpoint_name,
+        )
+        if materialized:
+            prefixes.append(materialized.replace('<detail>', ''))
+    return prefixes
+
+
+def write_edit_receipt(
+    *,
+    workspace_root: Path,
+    repair_contract: RepairContract,
+    edited_files: list[str],
+    first_edit_summary: str,
+) -> Path:
+    receipt = EditReceipt(
+        module_id=repair_contract.module_id,
+        workspace_root=str(workspace_root),
+        repair_request_path=str(workspace_repair_request_path(workspace_root)),
+        edited_files=edited_files,
+        first_edit_summary=first_edit_summary,
+        rerun_command=repair_contract.rerun_command,
+    )
+    return _json_dump(workspace_edit_receipt_path(workspace_root), receipt.model_dump())
+
+
+def _select_repair_targets(
+    *,
+    workspace_record: NodeWorkspaceRecord,
+    node: PlanDAGNode,
+    missing_checkpoints: list[str],
+    failed_checkpoints: list[str],
+) -> tuple[str, list[str]]:
+    draft_rtl_map = json.loads(workspace_record.draft_paths['rtl'])
+    rtl_paths = list(draft_rtl_map.values())
+    tb_path = workspace_record.draft_paths['tb']
+    _file_contains_tokens(
+        Path(tb_path),
+        _checkpoint_contract_prefixes(
+            node=node,
+            checkpoint_names=[*missing_checkpoints, *failed_checkpoints],
+        ),
+    )
+
+    error_message = _validation_error_message(workspace_record)
+    is_compile_failure = bool(error_message and 'Compilation failed' in error_message)
+
+    if is_compile_failure and rtl_paths:
+        primary = rtl_paths[0]
+    elif failed_checkpoints:
+        primary = (rtl_paths or [tb_path])[0]
+    elif missing_checkpoints:
+        if node.integration_role == 'top':
+            primary = (rtl_paths or [tb_path])[0]
+        else:
+            primary = tb_path
+    elif rtl_paths:
+        primary = rtl_paths[0]
+    else:
+        primary = tb_path
+
+    secondary = [path for path in [*rtl_paths, tb_path] if path != primary]
+    return primary, secondary
+
+
+def _file_excerpt(path: Path, *, max_lines: int = 12) -> str | None:
+    if not path.is_file():
+        return None
+    lines = path.read_text(encoding='utf-8').splitlines()
+    return '\n'.join(lines[:max_lines]).strip() or None
+
+
+def _repair_target_reason(
+    *,
+    primary_target_file: str,
+    workspace_record: NodeWorkspaceRecord,
+    missing_checkpoints: list[str],
+    failed_checkpoints: list[str],
+) -> str:
+    tb_path = workspace_record.draft_paths['tb']
+    if primary_target_file == tb_path and (missing_checkpoints or failed_checkpoints):
+        return (
+            'testbench-first repair: validation failed on missing or failed '
+            'checkpoints, so the shortest meaningful first edit is to make the '
+            'draft testbench emit the expected CHECKPOINT contract line.'
+        )
+    if primary_target_file.endswith('.cpp'):
+        return 'testbench-first repair: draft testbench needs concrete harness logic.'
+    return 'rtl-first repair: draft RTL contains incorrect logic or failed functional behavior.'
+
+
+def _build_first_edit_steps(
+    *,
+    node: PlanDAGNode,
+    primary_target_file: str,
+    expected_checkpoint: str | None,
+    expected_checkpoint_contract: str | None,
+) -> tuple[list[str], list[str]]:
+    must_add_tokens: list[str] = []
+    first_edit_steps = [
+        f'Open {primary_target_file} and fix the identified error with concrete logic or checks.',
+    ]
+    if primary_target_file.endswith('.cpp') and expected_checkpoint:
+        checkpoint_prefix = (expected_checkpoint_contract or '').replace(
+            '<detail>', ''
+        ) or f'CHECKPOINT|{expected_checkpoint}|PASS|'
+        must_add_tokens.append(checkpoint_prefix)
+        first_edit_steps.append(
+            'Add code that emits the exact CHECKPOINT contract prefix '
+            f'"{checkpoint_prefix}" on the passing path.'
+        )
+    elif primary_target_file.endswith('.v'):
+        first_edit_steps.append(
+            'Fix incorrect RTL assignments with correct combinational or sequential behavior.'
+        )
+        if node.integration_role == 'top':
+            must_add_tokens.extend(
+                [
+                    'STATE_IDLE',
+                    'STATE_BUSY',
+                    'if (!rst_n)',
+                    'if (start)',
+                    "done <= 1'b1",
+                ]
+            )
+            first_edit_steps.extend(
+                [
+                    'In the first RTL edit, install the top-core handshake FSM skeleton: STATE_IDLE/STATE_BUSY/STATE_DONE, reset handling, start acceptance, busy gating, and done pulse behavior.',
+                    'Latch key/plaintext on start, hold busy high through the active window, and structure the control so the ciphertext is released on the 11-cycle completion boundary.',
+                    'Keep the AES datapath hook local to this module for the MVP; you may use a local aes128_encrypt_block helper function or equivalent behavioral round helper.',
+                ]
+            )
+        vector_hint = _rtl_vector_hint(node)
+        if vector_hint:
+            first_edit_steps.append(vector_hint)
+    first_edit_steps.append(
+        'Save the primary file before running the repair receipt command.'
+    )
+    return first_edit_steps, must_add_tokens
+
+
+def _rtl_vector_hint(node: PlanDAGNode) -> str | None:
+    vector_path = resolve_vector_path(node.pass_criteria.l1.vector_set)
+    if vector_path is None:
+        return None
+    examples = [
+        line.strip()
+        for line in vector_path.read_text(encoding='utf-8').splitlines()
+        if line.strip() and not line.lstrip().startswith('#')
+    ]
+    if not examples:
+        return None
+    if node.module_id == 'aes_sbox':
+        mappings = []
+        for example in examples:
+            if ',' not in example:
+                continue
+            input_hex, output_hex = (part.strip() for part in example.split(',', 1))
+            mappings.append(f"8'h{input_hex} -> 8'h{output_hex}")
+        if mappings:
+            return (
+                'Implement these frozen AES S-box KAT mappings in the RTL first: '
+                + ', '.join(mappings)
+                + '. A case statement covering these entries is acceptable for the current vector set.'
+            )
+    if node.integration_role == 'top':
+        extra_examples: list[str] = []
+        for candidate_name in (
+            'aes128_encrypt_core_zero.txt',
+            'aes128_encrypt_core_regress.txt',
+        ):
+            candidate_path = vector_path.with_name(candidate_name)
+            if not candidate_path.is_file():
+                continue
+            extra_lines = [
+                line.strip()
+                for line in candidate_path.read_text(encoding='utf-8').splitlines()
+                if line.strip() and not line.lstrip().startswith('#')
+            ]
+            if extra_lines:
+                extra_examples.extend(extra_lines)
+        if extra_examples:
+            examples = [*examples, *extra_examples]
+    return (
+        'Preserve these frozen vector anchors from '
+        f'{node.pass_criteria.l1.vector_set}: ' + '; '.join(examples) + '.'
+    )
+
+
+def write_repair_request(
+    *,
+    workspace_record: NodeWorkspaceRecord,
+    node: PlanDAGNode,
+    generation_result_path: Path,
+    failure_phase: str | None = None,
+    missing_checkpoints: list[str],
+    failed_checkpoints: list[str],
+    rerun_command: str,
+) -> Path:
+    workspace_root = Path(workspace_record.workspace_root)
+    receipt_path = workspace_edit_receipt_path(workspace_root)
+    if receipt_path.is_file():
+        receipt_path.unlink()
+    primary_target_file, secondary_target_files = _select_repair_targets(
+        workspace_record=workspace_record,
+        node=node,
+        missing_checkpoints=missing_checkpoints,
+        failed_checkpoints=failed_checkpoints,
+    )
+    expected_checkpoint = None
+    if failed_checkpoints:
+        expected_checkpoint = failed_checkpoints[0]
+    elif missing_checkpoints:
+        expected_checkpoint = missing_checkpoints[0]
+    expected_checkpoint_contract = _materialize_checkpoint_contract(
+        node.pass_criteria.l1.checkpoint_contract,
+        expected_checkpoint,
+    )
+
+    primary_path = Path(primary_target_file)
+    primary_target_reason = _repair_target_reason(
+        primary_target_file=primary_target_file,
+        workspace_record=workspace_record,
+        missing_checkpoints=missing_checkpoints,
+        failed_checkpoints=failed_checkpoints,
+    )
+    first_edit_steps, must_add_tokens = _build_first_edit_steps(
+        node=node,
+        primary_target_file=primary_target_file,
+        expected_checkpoint=expected_checkpoint,
+        expected_checkpoint_contract=expected_checkpoint_contract,
+    )
+    required_first_edit = (
+        f'Edit {primary_target_file} first. Fix the identified error '
+        f'until {expected_checkpoint or node.module_id} is actionable.'
+    )
+    error_excerpt = _validation_error_message(workspace_record)
+    tracked_files = [primary_target_file, *secondary_target_files]
+    baseline_hashes = {
+        path: _file_digest(Path(path)) for path in tracked_files if Path(path).is_file()
+    }
+    from MultiAgent_FPGA.aes_mvp.artifacts import ValidationFailurePhase
+
+    resolved_phase = None
+    if failure_phase is not None:
+        if isinstance(failure_phase, ValidationFailurePhase):
+            resolved_phase = failure_phase
+        elif isinstance(failure_phase, str):
+            resolved_phase = ValidationFailurePhase(failure_phase)
+    contract = RepairContract(
+        module_id=node.module_id,
+        workspace_root=str(workspace_root),
+        generation_result_path=str(generation_result_path),
+        workspace_state_path=str((workspace_root / 'workspace_state.json').resolve()),
+        validation_summary_path=workspace_record.validation_paths['validation_summary'],
+        validation_error_path=workspace_record.validation_paths['validation_error'],
+        failure_phase=resolved_phase,
+        primary_target_file=primary_target_file,
+        primary_target_reason=primary_target_reason,
+        primary_file_excerpt=_file_excerpt(primary_path),
+        secondary_target_files=secondary_target_files,
+        required_first_edit=required_first_edit,
+        first_edit_steps=first_edit_steps,
+        must_add_tokens=must_add_tokens,
+        expected_checkpoint=expected_checkpoint,
+        error_excerpt=error_excerpt,
+        rerun_command=rerun_command,
+        edit_verification={
+            'receipt_path': str(workspace_edit_receipt_path(workspace_root)),
+            'baseline_hashes': baseline_hashes,
+            'required_changed_file': primary_target_file,
+        },
+    )
+    return _json_dump(
+        workspace_repair_request_path(workspace_root), contract.model_dump()
+    )
+
+
+def verify_repair_edit(
+    *,
+    workspace_root: Path,
+    repair_contract: RepairContract,
+) -> tuple[bool, list[str], str]:
+    baseline_hashes = {
+        str(path): str(digest)
+        for path, digest in dict(repair_contract.edit_verification)
+        .get('baseline_hashes', {})
+        .items()
+    }
+    edited_files: list[str] = []
+    for path_str, baseline in baseline_hashes.items():
+        candidate = Path(path_str)
+        if candidate.is_file() and _file_digest(candidate) != baseline:
+            edited_files.append(str(candidate))
+
+    if repair_contract.primary_target_file not in edited_files:
+        return (
+            False,
+            edited_files,
+            'repair phase must edit the primary_target_file before revalidation',
+        )
+
+    if repair_contract.must_add_tokens:
+        primary_text = Path(repair_contract.primary_target_file).read_text(
+            encoding='utf-8'
+        )
+
+        def _token_present(token: str, text: str) -> bool:
+            if token in text:
+                return True
+            # Accept emit_checkpoint helper as equivalent to literal CHECKPOINT| line.
+            # Token format: CHECKPOINT|<name>|PASS|
+            if token.startswith('CHECKPOINT|') and token.endswith('|'):
+                checkpoint_name = token.split('|')[1]
+                if f'emit_checkpoint("{checkpoint_name}"' in text:
+                    return True
+                if f"emit_checkpoint('{checkpoint_name}'" in text:
+                    return True
+            return False
+
+        missing_tokens = [
+            token
+            for token in repair_contract.must_add_tokens
+            if not _token_present(token, primary_text)
+        ]
+        if missing_tokens:
+            return (
+                False,
+                edited_files,
+                'repair phase did not add the required first-edit tokens: '
+                + ', '.join(missing_tokens),
+            )
+
+    return True, edited_files, 'repair edit verified'
+
+
 def write_generation_result(
     *,
     workspace_record: NodeWorkspaceRecord,
     node: PlanDAGNode,
     validation_status: str,
+    failure_phase: str | None = None,
     promoted: bool,
     changed_files: list[str],
     checkpoint_summary: dict[str, str],
     missing_checkpoints: list[str],
     failed_checkpoints: list[str],
+    recommended_mode: str | None = None,
 ) -> Path:
     workspace_root = Path(workspace_record.workspace_root)
     draft_rtl_paths = json.loads(workspace_record.draft_paths['rtl'])
+    repair_guidance = _repair_guidance(
+        workspace_record=workspace_record,
+        node=node,
+        missing_checkpoints=missing_checkpoints,
+        failed_checkpoints=failed_checkpoints,
+    )
     payload = {
         'module_id': node.module_id,
         'workspace_state': workspace_record.state.value,
@@ -503,23 +762,119 @@ def write_generation_result(
         'draft_rtl_paths': list(draft_rtl_paths.values()),
         'draft_tb_path': workspace_record.draft_paths['tb'],
         'validation_status': validation_status,
+        'failure_phase': failure_phase.value
+        if hasattr(failure_phase, 'value')
+        else failure_phase,
         'validation_paths': dict(workspace_record.validation_paths),
         'workspace_state_path': str(
             (workspace_root / 'workspace_state.json').resolve()
         ),
         'repair_attempts': max(0, workspace_record.validation_runs - 1),
         'promoted': promoted,
-        'canonical_targets': workspace_record.canonical_targets,
+        'promoted_targets': workspace_record.promoted_paths,
         'changed_files': changed_files,
         'checkpoint_summary': checkpoint_summary,
         'missing_checkpoints': list(missing_checkpoints),
         'failed_checkpoints': list(failed_checkpoints),
+        'repair_guidance': repair_guidance,
+        'recommended_mode': recommended_mode,
+        'repair_request_path': str(workspace_repair_request_path(workspace_root)),
+        'edit_receipt_path': str(workspace_edit_receipt_path(workspace_root)),
+    }
+    return _json_dump(workspace_root / 'generation_result.json', payload)
+
+
+def write_cascade_block_result(
+    *,
+    workspace_root: Path,
+    module_id: str,
+    blocked_by: str,
+) -> Path:
+    """Write a generation_result.json marking a module as cascade-blocked."""
+    payload = {
+        'module_id': module_id,
+        'workspace_state': NodeWorkspaceState.BLOCKED.value,
+        'validation_status': 'blocked',
+        'failure_phase': None,
+        'cascade_blocked_by': blocked_by,
+        'promoted': False,
+        'checkpoint_summary': {},
+        'missing_checkpoints': [],
+        'failed_checkpoints': [],
+        'recommended_mode': None,
+    }
+    return _json_dump(workspace_root / 'generation_result.json', payload)
+
+
+def write_budget_exhausted_result(
+    *,
+    workspace_root: Path,
+    module_id: str,
+    repair_rounds_consumed: int,
+) -> Path:
+    """Write generation_result.json marking a module as blocked due to repair budget exhaustion."""
+    payload = {
+        'module_id': module_id,
+        'workspace_state': NodeWorkspaceState.BLOCKED.value,
+        'validation_status': 'failed',
+        'failure_phase': 'repair_budget_exhausted',
+        'repair_budget_exhausted': True,
+        'repair_rounds_consumed': repair_rounds_consumed,
+        'promoted': False,
+        'checkpoint_summary': {},
+        'missing_checkpoints': [],
+        'failed_checkpoints': [],
+        'recommended_mode': None,
+    }
+    return _json_dump(workspace_root / 'generation_result.json', payload)
+
+
+def write_defensive_failure_result(
+    *,
+    workspace_root: Path,
+    module_id: str,
+    failure_reason: str,
+) -> Path:
+    """Write a minimal generation_result.json when the executor crashes/times out."""
+    payload = {
+        'module_id': module_id,
+        'workspace_state': NodeWorkspaceState.FAILED.value,
+        'validation_status': 'failed',
+        'failure_phase': 'executor_crash',
+        'failure_reason': failure_reason,
+        'promoted': False,
+        'checkpoint_summary': {},
+        'missing_checkpoints': [],
+        'failed_checkpoints': [],
+        'recommended_mode': None,
     }
     return _json_dump(workspace_root / 'generation_result.json', payload)
 
 
 def increment_validation_runs(record: NodeWorkspaceRecord) -> NodeWorkspaceRecord:
     return record.model_copy(update={'validation_runs': record.validation_runs + 1})
+
+
+def write_validation_summary(
+    *,
+    workspace_record: NodeWorkspaceRecord,
+    payload: dict[str, Any],
+) -> Path:
+    return _json_dump(
+        Path(workspace_record.validation_paths['validation_summary']),
+        payload,
+    )
+
+
+def write_validation_error(
+    *,
+    workspace_record: NodeWorkspaceRecord,
+    payload: dict[str, Any],
+) -> Path:
+    return _json_dump(
+        Path(workspace_record.validation_paths['validation_error']),
+        payload,
+    )
 
 
 def build_workspace_node(
@@ -530,15 +885,40 @@ def build_workspace_node(
 ) -> PlanDAGNode:
     draft_rtl_map = json.loads(workspace_record.draft_paths['rtl'])
     draft_rtl_files = list(draft_rtl_map.values())
-    if dependency_rtl_files and node.module_id == 'aes128_encrypt_core':
+    compile_rtl_files = list(draft_rtl_files)
+    if dependency_rtl_files:
         compile_rtl_files = [*dependency_rtl_files, *draft_rtl_files]
-    else:
-        compile_rtl_files = draft_rtl_files
     workspace_root = Path(workspace_record.workspace_root)
     return node.model_copy(
         update={
             'rtl_files': compile_rtl_files,
             'tb_file': workspace_record.draft_paths['tb'],
+            'build_output_dir': str(
+                (workspace_root / 'validation' / 'build').resolve()
+            ),
+            'sim_output_dir': str((workspace_root / 'validation' / 'sim').resolve()),
+        }
+    )
+
+
+def build_promoted_node(
+    *,
+    node: PlanDAGNode,
+    workspace_record: NodeWorkspaceRecord,
+    promoted_root: Path,
+    dependency_rtl_files: list[str] | None = None,
+) -> PlanDAGNode:
+    promoted_rtl_map = json.loads(workspace_record.promoted_paths['rtl'])
+    promoted_rtl_files = list(promoted_rtl_map.values())
+    compile_rtl_files = list(promoted_rtl_files)
+    if dependency_rtl_files:
+        compile_rtl_files = [*dependency_rtl_files, *promoted_rtl_files]
+    workspace_root = Path(workspace_record.workspace_root)
+    promoted_tb = _promoted_tb_path(node, promoted_root)
+    return node.model_copy(
+        update={
+            'rtl_files': compile_rtl_files,
+            'tb_file': promoted_tb,
             'build_output_dir': str(
                 (workspace_root / 'validation' / 'build').resolve()
             ),
@@ -557,6 +937,7 @@ def evaluate_validation_result(
             'checkpoint_summary': {},
             'missing_checkpoints': list(node.pass_criteria.l1.coverage_checkpoints),
             'failed_checkpoints': [],
+            'failure_phase': 'l1_sim',
         }
     checkpoint_summary = l1_payload.get('checkpoint_summary', {})
     if not isinstance(checkpoint_summary, dict):
@@ -568,22 +949,29 @@ def evaluate_validation_result(
     validation_status = (
         'passed' if not rollup['missing'] and not rollup['failed'] else 'failed'
     )
+    failure_phase: str | None = None
+    if rollup['missing']:
+        failure_phase = 'checkpoint_missing'
+    elif rollup['failed']:
+        failure_phase = 'checkpoint_failed'
     return validation_status, {
         'checkpoint_summary': checkpoint_summary,
         'missing_checkpoints': rollup['missing'],
         'failed_checkpoints': rollup['failed'],
+        'failure_phase': failure_phase,
     }
 
 
 def promote_workspace(
     *,
-    package_root: Path,
     node: PlanDAGNode,
     workspace_record: NodeWorkspaceRecord,
     checkpoint_summary: dict[str, str],
 ) -> PromotionRecord:
     workspace_root = Path(workspace_record.workspace_root)
+    promoted_root = workspace_promoted_root(workspace_root)
     draft_rtl_map = json.loads(workspace_record.draft_paths['rtl'])
+    promoted_rtl_map = json.loads(workspace_record.promoted_paths['rtl'])
     draft_targets = [Path(path) for path in draft_rtl_map.values()]
     draft_tb = Path(workspace_record.draft_paths['tb'])
     snapshot_root = (workspace_root / 'promotion' / 'snapshots').resolve()
@@ -594,8 +982,8 @@ def promote_workspace(
     for source, target in zip(
         [*draft_targets, draft_tb],
         [
-            *[(package_root / path).resolve() for path in node.rtl_files],
-            (package_root / node.tb_file).resolve(),
+            *[Path(path).resolve() for path in promoted_rtl_map.values()],
+            Path(_promoted_tb_path(node, promoted_root)).resolve(),
         ],
         strict=True,
     ):
@@ -607,11 +995,23 @@ def promote_workspace(
         shutil.copyfile(source, target)
         promoted_targets.append(str(target))
 
+    promoted_rtl_dir = next(
+        (Path(p).resolve().parent for p in promoted_rtl_map.values()), None
+    )
+    if promoted_rtl_dir:
+        promoted_rtl_includes = _stage_rtl_include_files(promoted_rtl_dir)
+        promoted_targets.extend(promoted_rtl_includes)
+
+    promoted_tb_support = _stage_tb_support_headers(
+        Path(_promoted_tb_path(node, promoted_root)).resolve().parent
+    )
+    promoted_targets.extend(promoted_tb_support)
+
     record = PromotionRecord(
         module_id=node.module_id,
         promoted_at=datetime.now(UTC).isoformat(),
         draft_paths=[str(path) for path in [*draft_targets, draft_tb]],
-        canonical_targets=promoted_targets,
+        promoted_targets=promoted_targets,
         snapshot_paths=snapshot_paths,
         validation_paths=list(workspace_record.validation_paths.values()),
         checkpoint_summary=checkpoint_summary,

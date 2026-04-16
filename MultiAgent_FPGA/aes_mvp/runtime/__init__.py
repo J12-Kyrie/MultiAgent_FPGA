@@ -3,6 +3,7 @@
 from MultiAgent_FPGA.aes_mvp.runtime.bootstrap import RuntimeBootstrap
 from MultiAgent_FPGA.aes_mvp.runtime.factory import SdkAgentFactory
 from MultiAgent_FPGA.aes_mvp.runtime.runner import (
+    BatchRunSummary,
     ConversationRunner,
     ConversationSummary,
 )
@@ -19,6 +20,7 @@ from MultiAgent_FPGA.aes_mvp.runtime.session import (
 )
 
 __all__ = [
+    'BatchRunSummary',
     'ConversationRunner',
     'ConversationSummary',
     'ExecutionSession',

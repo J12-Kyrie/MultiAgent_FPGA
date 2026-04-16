@@ -1,8 +1,8 @@
 ---
 name: verilog-verilator
-description: Repository skill for Verilog .v designs that use an existing .v or .cpp testbench through Verilator MCP with a fixed compile-then-simulate workflow.
-type: repo
-version: 1.0.0
+description: Repository skill for Verilog .v plus .v/.cpp TB via Verilator MCP, compile-then-simulate, and include search paths for .vh headers.
+type: knowledge
+version: 1.0.1
 agent: CodeActAgent
 ---
 
@@ -43,6 +43,16 @@ For compile calls:
 - `files` must include the `.v` RTL file and the existing `.v` or `.cpp` testbench file.
 - Always pass `language: "verilog"` for `.v` workflows.
 - Prefer an explicit build output directory such as `build/obj_dir`.
+
+# Include Files (`.vh`) And Search Path
+
+- A Verilog file that references a header such as `aes_sbox_lut.vh` needs that file on Verilator’s include path. Use **include directories** (`-I<dir>`) where `<dir>` is the folder that **contains** the header (for example `MultiAgent_FPGA/aes_mvp/rtl/`).
+
+- **`files` must list only source files** (`.v`, `.sv`, `.cpp`, …), not directories. Passing a directory path as if it were a Verilog file leads to errors such as `Cannot find file containing module: '<path>/rtl'` because Verilator treats unknown path tokens as module lookup targets.
+
+- **AES MVP framework path**: Node validation uses the internal `VerilatorMCPAdapter`, which adds `-I<resolved_rtl_parent>` for each compiled `.v` parent directory and filters non-files out of `files`. When **manually** invoking `verilator_compile` through MCP, mirror that contract: ensure every directory that holds included headers is covered by `-I`, and never append bare include directories to the `files` array.
+
+- Prefer a **single-argument** include flag form (`-I/path/to/rtl`) when assembling extra flags, so the compile argv stays unambiguous across toolchains.
 
 For simulate calls:
 

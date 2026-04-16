@@ -122,10 +122,10 @@ export class CompileTool extends AbstractTool<CompileParams, CompileResult> {
 
     // Suppress warnings
     const defaultSuppressWarnings = ['EOFNEWLINE', 'TIMESCALEMOD', 'COVERIGN'];
-    const suppressWarnings = params.suppressWarnings ? 
-      [...defaultSuppressWarnings, ...params.suppressWarnings] : 
+    const suppressWarnings = params.suppressWarnings ?
+      [...defaultSuppressWarnings, ...params.suppressWarnings] :
       defaultSuppressWarnings;
-      
+
     for (const warning of suppressWarnings) {
       args.push(`-Wno-${warning}`);
     }
@@ -137,7 +137,7 @@ export class CompileTool extends AbstractTool<CompileParams, CompileResult> {
 
     // Enable timing for testbenches
     args.push('--timing');
-    
+
     // Only add --exe and --build if we have a C++ testbench
     // For pure SystemVerilog testbenches, just compile to library
     const hasCppFile = params.files.some(f => f.endsWith('.cpp') || f.endsWith('.cc'));
@@ -164,9 +164,9 @@ export class CompileTool extends AbstractTool<CompileParams, CompileResult> {
       if (!result) {
         throw new Error('No result from Verilator execution');
       }
-      
+
       logger.debug(`Verilator result - exitCode: ${result.exitCode}, stderr: ${result.stderr?.substring(0, 500)}...`);
-      
+
       const errors = ErrorHandler.parseVerilatorOutput(result.stderr || '');
       const actualErrors = errors.filter(e => e.type === 'error');
       const warnings = errors.filter(e => e.type === 'warning');
@@ -200,6 +200,13 @@ export class CompileTool extends AbstractTool<CompileParams, CompileResult> {
       // Extract statistics from output
       const stats = this.extractCompilationStats(result.stdout);
 
+      // Capture raw stderr so file:line:error-type info is available to repair workers
+      const stderrExcerpt = (result.stderr || '').slice(0, 4096);
+      const parsedErrorText = actualErrors.map(e => e.message).join('; ');
+      const errorDetail = parsedErrorText
+        ? `Parsed errors: ${parsedErrorText}\n\nRaw Verilator stderr:\n${stderrExcerpt}`
+        : `Compilation failed.\n\nRaw Verilator stderr:\n${stderrExcerpt}`;
+
       const toolResult = {
         success,
         data: {
@@ -211,7 +218,7 @@ export class CompileTool extends AbstractTool<CompileParams, CompileResult> {
           warnings,
           stats,
         },
-        error: success ? undefined : `Compilation failed: ${actualErrors.map(e => e.message).join('; ')}`,
+        error: success ? undefined : `Compilation failed: Exiting due to ${actualErrors.length} error(s), ${warnings.length} warning(s)\n${errorDetail}`,
       };
 
       logger.debug(`Returning compile result: ${JSON.stringify({ success, errorCount: actualErrors.length, warningCount: warnings.length })}`);

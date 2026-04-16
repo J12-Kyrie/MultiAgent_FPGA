@@ -16,30 +16,37 @@ export class ErrorHandler {
 
     // Verilator error format:
     // %Error: filename.v:line:column: message
-    // %Warning: filename.v:line: message
-    const errorRegex = /^%(\w+):\s*(.+?):(\d+)(?::(\d+))?\s*:\s*(.+)$/;
-    const simpleErrorRegex = /^%(\w+):\s*(.+)$/;
+    // %Warning-CODE: filename.v:line: message
+    const errorRegex = /^%(\w[\w-]*):\s*(.+?):(\d+)(?::(\d+))?\s*:\s*(.+)$/;
+    const simpleErrorRegex = /^%(\w[\w-]*):\s*(.+)$/;
 
     for (const line of lines) {
       let match = errorRegex.exec(line);
       if (match) {
-        const [, type, file, lineNum, column, message] = match;
+        const [, rawType, file, lineNum, column, message] = match;
+        // Normalize: %Warning-ALWNEVER → 'warning', %Error-FOO → 'error'
+        const baseType = rawType.toLowerCase().split('-')[0] as 'error' | 'warning' | 'info';
+        const code = rawType.includes('-') ? rawType.split('-').slice(1).join('-') : undefined;
         errors.push({
-          type: type.toLowerCase() as 'error' | 'warning' | 'info',
+          type: baseType,
           file,
           line: parseInt(lineNum, 10),
           column: column ? parseInt(column, 10) : undefined,
-          message,
+          message: code ? `[${code}] ${message}` : message,
+          code,
         });
         continue;
       }
 
       match = simpleErrorRegex.exec(line);
       if (match) {
-        const [, type, message] = match;
+        const [, rawType, message] = match;
+        const baseType = rawType.toLowerCase().split('-')[0] as 'error' | 'warning' | 'info';
+        const code = rawType.includes('-') ? rawType.split('-').slice(1).join('-') : undefined;
         errors.push({
-          type: type.toLowerCase() as 'error' | 'warning' | 'info',
-          message,
+          type: baseType,
+          message: code ? `[${code}] ${message}` : message,
+          code,
         });
       }
     }
@@ -98,7 +105,7 @@ export class ErrorHandler {
       /PINMISSING/i,
     ];
 
-    return error.type === 'warning' && 
+    return error.type === 'warning' &&
            recoverablePatterns.some(pattern => pattern.test(error.message));
   }
 

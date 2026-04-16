@@ -1,0 +1,23 @@
+stateDiagram-v2
+    [*] --> MISSING: Node created
+
+    MISSING --> DRAFT_READY: Initialize + pre-populate memory
+
+    DRAFT_READY --> GENERATED: Generate pass (L0 + L1 OK)
+
+    DRAFT_READY --> REPAIRING: Generate fail (L0 or L1 error)
+
+    GENERATED --> VALIDATED: All checkpoints pass
+
+    GENERATED --> REPAIRING: Checkpoints missing or failed
+
+    REPAIRING --> GENERATED: Repair + revalidation pass
+
+    REPAIRING --> REPAIRING: Revalidation fail (budget remaining)
+
+    REPAIRING --> BLOCKED: Repair budget exhausted
+
+    VALIDATED --> PROMOTED: Copy draft to promoted/
+
+    BLOCKED --> [*]: Terminal
+    PROMOTED --> [*]: Terminal

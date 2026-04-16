@@ -1,0 +1,53 @@
+flowchart TB
+    subgraph Phase0["Phase 0: Bootstrap"]
+        CLI["CLI Entry\n__main__.py\nrun-aes-mvp"] --> Boot["RuntimeBootstrap.build()"]
+        Boot --> SDK["load_sdk_modules()\nsdk_shim.py"]
+        Boot --> Skills["validate_skill_paths()\n16 .md files"]
+        Boot --> Synth["Synthesis Layer\nsynthesis.py"]
+        Synth --> SpecIR["SpecIR"]
+        Synth --> PlanDAG["PlanDAG\n4 nodes"]
+        Synth --> Manifest["IntegrationRegression\nManifest"]
+        Boot --> MCP["build_verilator_stdio_server()\nMCP config"]
+        Boot --> LLM["DeepSeek LLM Profiles\nthinking + fast"]
+    end
+
+    subgraph Phase1["Phase 1: Session Setup"]
+        Boot --> Factory["SdkAgentFactory"]
+        Factory --> RegTools["register_execution_tools()\nrun_executor"]
+        Factory --> RegAgents["register_delegate_agents()\nworker x 4, repair x 4,\nl2 x N"]
+        Factory --> Runner["ConversationRunner"]
+        Runner --> ExecConv["create_execution_conversation()\nOrchestrator Agent"]
+    end
+
+    subgraph Phase2["Phase 2: Autonomous Execution Loop"]
+        ExecConv --> Plan["_build_delegate_plan()\nDAGBatchPlanner"]
+        Plan --> BatchLoop{"while True"}
+        BatchLoop --> CollectState["_collect_existing_\ngeneration_summary()"]
+        CollectState --> EvalGate["_evaluate_workflow_gate()"]
+        EvalGate -->|success| Done["Return SUCCESS"]
+        EvalGate -->|blocked| Blocked["Return BLOCKED"]
+        EvalGate -->|continue| NextBatch["_next_eligible_\nautonomous_batch()"]
+        EvalGate -->|"ready_for_\nintegration"| IntBatch["_build_integration_batch()"]
+        NextBatch --> RunBatch["run_current_batch_until_gate()"]
+        IntBatch --> RunBatch
+        RunBatch --> PostRun["Post-run artifact check\n+ repair verification"]
+        PostRun --> BatchLoop
+    end
+
+    subgraph Phase3["Phase 3: Finalizer"]
+        Done --> Finalizer["_run_autonomous_finalizer()"]
+        Blocked --> Finalizer
+        Finalizer --> FinConv["create_finalizer_conversation()\nThinking LLM"]
+        FinConv --> Accept["final_acceptance_summary.json"]
+    end
+
+    subgraph Phase4["Phase 4: Report Assembly"]
+        Accept --> Extract["_extract_delegate_results()"]
+        Extract --> Summary["session_summary.json\nreport_tree.json"]
+    end
+
+    style Phase0 fill:#eff6ff,stroke:#93c5fd,color:#1e3a5f
+    style Phase1 fill:#f0fdf4,stroke:#86efac,color:#14532d
+    style Phase2 fill:#fefce8,stroke:#fde047,color:#713f12
+    style Phase3 fill:#fdf2f8,stroke:#f9a8d4,color:#831843
+    style Phase4 fill:#f5f3ff,stroke:#c4b5fd,color:#3b0764

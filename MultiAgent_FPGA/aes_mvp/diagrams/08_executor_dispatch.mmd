@@ -1,0 +1,28 @@
+flowchart TB
+    Agent["Agent calls\nrun_executor"] --> Dispatch["Dispatch by mode"]
+
+    Dispatch -->|"Generate"| GenNode["Initialize Workspace\n+ pre-populate memory"]
+    Dispatch -->|"Validate"| RunNode["Run Validation"]
+    Dispatch -->|"Repair"| RecordRepair["Record + Verify\nRepair Edit"]
+    Dispatch -->|"Integration"| RunInt["Integration\nRegression"]
+
+    GenNode --> Validate["Compile + Simulate"]
+    RunNode --> Validate
+
+    Validate --> Result{"Pass?"}
+    Result -->|"Yes"| Promote(["Promote\nWorkspace"])
+    Result -->|"No"| RepairRec["Flag for Repair"]
+
+    RunInt --> Campaigns["Run Campaigns\n(baseline, back-to-back,\nmid-reset)"]
+
+    subgraph Verilator["Verilator Adapter"]
+        CompSim["Compile + Simulate\nvia MCP server"]
+    end
+
+    Validate --> CompSim
+    Campaigns --> CompSim
+
+    style Verilator fill:#f1f5f9,stroke:#94a3b8,color:#334155
+    style Agent fill:#f5f3ff,stroke:#c4b5fd,color:#3b0764
+    style Promote fill:#dcfce7,stroke:#4ade80,color:#14532d
+    style RepairRec fill:#fef3c7,stroke:#fbbf24,color:#78350f

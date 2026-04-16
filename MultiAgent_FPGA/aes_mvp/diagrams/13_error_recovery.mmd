@@ -1,0 +1,27 @@
+flowchart TB
+    Run["session.run()"] --> TryBlock["try: execution_loop -> finalizer"]
+
+    TryBlock -->|"Success"| HappyPath(["Write all artifacts\nReturn ExecutionSessionSummary"])
+
+    TryBlock -->|"Exception"| ExceptBlock["except Exception as exc"]
+
+    ExceptBlock --> CollectSummary["_collect_existing_generation_summary()\nRead whatever is on disk"]
+    CollectSummary --> CollectFragility["_collect_fragility_memory()"]
+    CollectFragility --> ExtractDelegates["_extract_delegate_results()"]
+
+    ExtractDelegates --> CheckProvider{"_is_provider_failure(exc)?\nAND deterministic_summary?"}
+
+    CheckProvider -->|"Yes"| Synthesize["_synthesize_final_acceptance_summary()\nLocal fallback with workflow_gate"]
+    Synthesize --> WriteFallback["Write final_acceptance_summary.json\nWrite session_summary.json\nstatus: finished_with_fallback"]
+    WriteFallback --> ReturnFallback(["Return ExecutionSessionSummary\n(no crash)"])
+
+    CheckProvider -->|"No"| WriteFailure["Write final_acceptance_summary.json\n= status: not_available\nWrite session_summary.json with error"]
+    WriteFailure --> Reraise(["raise  — crash"])
+
+    ExceptBlock -.-> Finally["finally: conversation.close()"]
+
+    style HappyPath fill:#dcfce7,stroke:#4ade80,color:#14532d
+    style ReturnFallback fill:#dcfce7,stroke:#4ade80,color:#14532d
+    style Reraise fill:#fee2e2,stroke:#f87171,color:#7f1d1d
+    style CheckProvider fill:#fefce8,stroke:#fde047,color:#713f12
+    style Synthesize fill:#dbeafe,stroke:#60a5fa,color:#1e3a5f
