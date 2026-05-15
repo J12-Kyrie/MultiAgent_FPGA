@@ -1,0 +1,23 @@
+{
+  "batch_id": "integration",
+  "delegate_requests_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/delegate_requests",
+  "expected_artifacts": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/integration_regression_result.json"
+  ],
+  "integration_request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/delegate_requests/integration__integration.json",
+  "manual_command_policy": "manual_*_command fields are operator-facing only; runtime dispatch uses structured request fields.",
+  "phase": "integration",
+  "tasks": [
+    {
+      "agent_type": "framework_integration",
+      "mode": "integration",
+      "request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/delegate_requests/integration__integration.json",
+      "worker_id": "integration"
+    }
+  ],
+  "workflow_gate_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workflow_gate.json",
+  "workflow_gate_summary": {
+    "decision": "ready_for_integration",
+    "next_batch_ids": []
+  }
+}

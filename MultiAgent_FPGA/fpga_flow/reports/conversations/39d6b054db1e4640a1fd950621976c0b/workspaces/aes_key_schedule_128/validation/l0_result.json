@@ -1,0 +1,6 @@
+{
+  "compile_result": "Compilation Successful\nOutput Directory: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/build\nExecutable: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/build/Vaes_key_schedule_128\n\nStatistics:\n  Modules: 4\n  Lines: 0\n",
+  "module_id": "aes_key_schedule_128",
+  "output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/build",
+  "stage": "L0"
+}

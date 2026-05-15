@@ -2932,7 +2932,7 @@ class ExecutionSession:
                 if not has_memory:
                     return 900.0
                 if self.focus_module_id == 'aes128_encrypt_core':
-                    return 600.0
+                    return 900.0  # complex top module with natural-language-only memory
                 return 420.0
             return 300.0
         if phase in {'generate_validate', 'repair_edit', 'revalidate'}:

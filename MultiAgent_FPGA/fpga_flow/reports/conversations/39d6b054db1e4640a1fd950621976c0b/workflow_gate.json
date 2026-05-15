@@ -1,0 +1,46 @@
+{
+  "blocked_modules": [],
+  "cascade_blocked_modules": [],
+  "completion_status": "success",
+  "decision": "success",
+  "integration_attempts": 1,
+  "integration_status": "passed",
+  "next_batch_ids": [],
+  "pending_modules": [],
+  "primary_sink": "aes128_encrypt_core",
+  "processed_batch_ids": [
+    "generation_layer_1_1_aes_sbox_repair_1",
+    "generation_layer_1_1_aes_sbox_repair_2",
+    "generation_layer_1_1_aes_sbox_revalidate_1",
+    "generation_layer_1_1_aes_sbox_revalidate_2",
+    "generation_layer_1_1_generate_validate",
+    "generation_layer_2_1_aes_key_schedule_128_repair_1",
+    "generation_layer_2_1_aes_key_schedule_128_repair_2",
+    "generation_layer_2_1_aes_key_schedule_128_revalidate_1",
+    "generation_layer_2_1_aes_key_schedule_128_revalidate_2",
+    "generation_layer_2_1_aes_round_transform_repair_1",
+    "generation_layer_2_1_aes_round_transform_repair_2",
+    "generation_layer_2_1_aes_round_transform_revalidate_1",
+    "generation_layer_2_1_aes_round_transform_revalidate_2",
+    "generation_layer_2_1_generate_validate",
+    "generation_layer_3_1_generate_validate",
+    "integration"
+  ],
+  "promoted_modules": [
+    "aes128_encrypt_core",
+    "aes_key_schedule_128",
+    "aes_round_transform",
+    "aes_sbox"
+  ],
+  "protocol_violation": null,
+  "ready_sink_modules": [
+    "aes128_encrypt_core"
+  ],
+  "reasons": [],
+  "required_modules": [
+    "aes_sbox",
+    "aes_key_schedule_128",
+    "aes_round_transform",
+    "aes128_encrypt_core"
+  ]
+}

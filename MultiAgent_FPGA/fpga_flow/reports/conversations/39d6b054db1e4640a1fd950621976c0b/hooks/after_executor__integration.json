@@ -1,0 +1,11 @@
+{
+  "batch_id": "integration",
+  "expected_artifacts": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/integration_regression_result.json"
+  ],
+  "observed_artifacts": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/integration_regression_result.json"
+  ],
+  "phase": "integration",
+  "timestamp": "2026-05-15T13:41:37.408766+00:00"
+}

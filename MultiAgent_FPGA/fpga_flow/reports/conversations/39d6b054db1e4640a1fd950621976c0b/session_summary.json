@@ -1,0 +1,366 @@
+{
+  "autonomous_handoff_digest_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/autonomous_handoff_digest.json",
+  "batch_history_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/batch_history.json",
+  "batch_plan_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/batch_plan.json",
+  "bootstrap_summary": {
+    "algorithm": "AES",
+    "integration_top": "aes128_encrypt_core",
+    "mcp_servers": [
+      "verilator"
+    ],
+    "nodes": [
+      "aes_sbox",
+      "aes_key_schedule_128",
+      "aes_round_transform",
+      "aes128_encrypt_core"
+    ],
+    "persistence_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations",
+    "repo_root": "/Users/kyrie/Downloads/OpenHands-1.5.0",
+    "runtime_skill_names": [
+      "aes-verilator-profile",
+      "aes-module-patterns",
+      "aes-tb-contracts",
+      "aes-repair-heuristics",
+      "openhands-sdk-subagent-delegation"
+    ],
+    "sdk_package": "openhands.sdk",
+    "synthesis_source": "autonomous",
+    "system_goal": "Autonomously design, implement, validate, repair, and integrate an AES-128 encrypt-only FPGA full-system using block-level handshake and an iterative 10-round microarchitecture.",
+    "variant": "AES-128",
+    "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128"
+  },
+  "brief_generation_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/brief_generation_summary.json",
+  "conversation_id": "39d6b054-db1e-4640-a1fd-950621976c0b",
+  "conversation_summary": {
+    "conversation_id": "39d6b054-db1e-4640-a1fd-950621976c0b",
+    "event_count": 13,
+    "execution_status": "finished",
+    "persistence_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/0ca6e8b85a764328b05151a73c7e5fbb",
+    "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128"
+  },
+  "current_batch_snapshot_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/current_batch_snapshot.json",
+  "delegate_attempted": 7,
+  "delegate_batch_count": 21,
+  "delegate_completed": 6,
+  "delegate_fallback_count": 1,
+  "delegate_fallbacks_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/delegate_fallbacks.json",
+  "delegate_plan_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/delegate_plan.json",
+  "delegate_registrations": [
+    "module_worker__aes_sbox",
+    "module_repair__aes_sbox",
+    "module_worker__aes_key_schedule_128",
+    "module_repair__aes_key_schedule_128",
+    "module_worker__aes_round_transform",
+    "module_repair__aes_round_transform",
+    "module_worker__aes128_encrypt_core",
+    "module_repair__aes128_encrypt_core"
+  ],
+  "delegate_results_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/delegate_results.json",
+  "deterministic_execution": {
+    "conversation_id": "39d6b054-db1e-4640-a1fd-950621976c0b",
+    "focus_module_id": "aes128_encrypt_core",
+    "generation_results_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/generation_results",
+    "integration": {
+      "campaign_count": 3,
+      "result_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/integration_regression_result.json",
+      "status": "passed"
+    },
+    "integration_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration_summary.json",
+    "modules": {
+      "aes128_encrypt_core": {
+        "changed_files": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/rtl/aes128_encrypt_core.v",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/tb/aes128_encrypt_core_tb.cpp",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/rtl/aes_sbox_lut.vh",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/tb/aes_tb_common.hpp"
+        ],
+        "checkpoint_summary": {
+          "CHK_BUSY_ASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt",
+          "CHK_BUSY_DEASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt",
+          "CHK_CIPHERTEXT_MATCH": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt",
+          "CHK_DONE_PULSE": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt",
+          "CHK_RESET_CLEAR": "PASS|reset_release",
+          "CHK_START_ACCEPTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt"
+        },
+        "design_brief_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/contracts/design_brief.json",
+        "draft_rtl_paths": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/draft/rtl/aes128_encrypt_core.v"
+        ],
+        "draft_tb_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/draft/tb/aes128_encrypt_core_tb.cpp",
+        "edit_receipt_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/edit_receipt.json",
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes128_encrypt_core",
+        "promoted": true,
+        "promoted_targets": {
+          "rtl": "{\"aes128_encrypt_core.v\": \"/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/rtl/aes128_encrypt_core.v\"}",
+          "tb": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/tb/aes128_encrypt_core_tb.cpp"
+        },
+        "recommended_mode": null,
+        "repair_attempts": 0,
+        "repair_guidance": [
+          "Read the design brief and validation artifacts, make one focused draft edit, then rerun the executor command."
+        ],
+        "repair_request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/repair_request.json",
+        "validation_paths": {
+          "l0_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/validation/l0_result.json",
+          "module_run_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/validation/sim/module_run_result.json",
+          "simulation_log": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/validation/sim/simulation.log",
+          "validation_error": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/validation/validation_error.json",
+          "validation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/validation/validation_summary.json",
+          "waveform": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/validation/sim/simulation.vcd"
+        },
+        "validation_status": "passed",
+        "workspace_state": "promoted",
+        "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes128_encrypt_core/workspace_state.json"
+      },
+      "aes_key_schedule_128": {
+        "changed_files": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_key_schedule_128/rtl/aes_key_schedule_128.v",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_key_schedule_128/tb/aes_key_schedule_128_tb.cpp",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_key_schedule_128/rtl/aes_sbox_lut.vh",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_key_schedule_128/tb/aes_tb_common.hpp"
+        ],
+        "checkpoint_summary": {
+          "CHK_ROUNDKEY_MATCH": "PASS|known_answer_vectors"
+        },
+        "design_brief_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/contracts/design_brief.json",
+        "draft_rtl_paths": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/draft/rtl/aes_key_schedule_128.v"
+        ],
+        "draft_tb_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/draft/tb/aes_key_schedule_128_tb.cpp",
+        "edit_receipt_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/edit_receipt.json",
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes_key_schedule_128",
+        "promoted": true,
+        "promoted_targets": {
+          "rtl": "{\"aes_key_schedule_128.v\": \"/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_key_schedule_128/rtl/aes_key_schedule_128.v\"}",
+          "tb": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_key_schedule_128/tb/aes_key_schedule_128_tb.cpp"
+        },
+        "recommended_mode": null,
+        "repair_attempts": 0,
+        "repair_guidance": [
+          "Read the design brief and validation artifacts, make one focused draft edit, then rerun the executor command."
+        ],
+        "repair_request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/repair_request.json",
+        "validation_paths": {
+          "l0_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/l0_result.json",
+          "module_run_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/sim/module_run_result.json",
+          "simulation_log": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/sim/simulation.log",
+          "validation_error": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/validation_error.json",
+          "validation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/validation_summary.json",
+          "waveform": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/validation/sim/simulation.vcd"
+        },
+        "validation_status": "passed",
+        "workspace_state": "promoted",
+        "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_key_schedule_128/workspace_state.json"
+      },
+      "aes_round_transform": {
+        "changed_files": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_round_transform/rtl/aes_round_transform.v",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_round_transform/tb/aes_round_transform_tb.cpp",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_round_transform/rtl/aes_sbox_lut.vh",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_round_transform/tb/aes_tb_common.hpp"
+        ],
+        "checkpoint_summary": {
+          "CHK_ROUND_STATE_MATCH": "PASS|known_answer_vectors"
+        },
+        "design_brief_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/contracts/design_brief.json",
+        "draft_rtl_paths": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/draft/rtl/aes_round_transform.v"
+        ],
+        "draft_tb_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/draft/tb/aes_round_transform_tb.cpp",
+        "edit_receipt_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/edit_receipt.json",
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes_round_transform",
+        "promoted": true,
+        "promoted_targets": {
+          "rtl": "{\"aes_round_transform.v\": \"/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_round_transform/rtl/aes_round_transform.v\"}",
+          "tb": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_round_transform/tb/aes_round_transform_tb.cpp"
+        },
+        "recommended_mode": null,
+        "repair_attempts": 0,
+        "repair_guidance": [
+          "Read the design brief and validation artifacts, make one focused draft edit, then rerun the executor command."
+        ],
+        "repair_request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/repair_request.json",
+        "validation_paths": {
+          "l0_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/validation/l0_result.json",
+          "module_run_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/validation/sim/module_run_result.json",
+          "simulation_log": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/validation/sim/simulation.log",
+          "validation_error": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/validation/validation_error.json",
+          "validation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/validation/validation_summary.json",
+          "waveform": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/validation/sim/simulation.vcd"
+        },
+        "validation_status": "passed",
+        "workspace_state": "promoted",
+        "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_round_transform/workspace_state.json"
+      },
+      "aes_sbox": {
+        "changed_files": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_sbox/rtl/aes_sbox.v",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_sbox/tb/aes_sbox_tb.cpp",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_sbox/rtl/aes_sbox_lut.vh",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_sbox/tb/aes_tb_common.hpp"
+        ],
+        "checkpoint_summary": {
+          "CHK_SBOX_MATCH": "PASS|4 vectors passed"
+        },
+        "design_brief_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/contracts/design_brief.json",
+        "draft_rtl_paths": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/draft/rtl/aes_sbox.v"
+        ],
+        "draft_tb_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/draft/tb/aes_sbox_tb.cpp",
+        "edit_receipt_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/edit_receipt.json",
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes_sbox",
+        "promoted": true,
+        "promoted_targets": {
+          "rtl": "{\"aes_sbox.v\": \"/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_sbox/rtl/aes_sbox.v\"}",
+          "tb": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_sbox/tb/aes_sbox_tb.cpp"
+        },
+        "recommended_mode": null,
+        "repair_attempts": 0,
+        "repair_guidance": [
+          "Read the design brief and validation artifacts, make one focused draft edit, then rerun the executor command."
+        ],
+        "repair_request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/repair_request.json",
+        "validation_paths": {
+          "l0_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/validation/l0_result.json",
+          "module_run_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/validation/sim/module_run_result.json",
+          "simulation_log": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/validation/sim/simulation.log",
+          "validation_error": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/validation/validation_error.json",
+          "validation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/validation/validation_summary.json",
+          "waveform": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/validation/sim/simulation.vcd"
+        },
+        "validation_status": "passed",
+        "workspace_state": "promoted",
+        "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workspaces/aes_sbox/workspace_state.json"
+      }
+    },
+    "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promotion_events.json",
+    "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promotion_failures.json"
+  },
+  "execution_batch_conversation_ids": [
+    "4be09c5b-0a6b-4475-92bb-7ccc77938de1",
+    "8da18907-7ce6-4af8-813c-6647055812eb",
+    "9b5bc295-61a4-4c5c-994a-5c1f932c1817",
+    "0ca6e8b8-5a76-4328-b051-51a73c7e5fbb"
+  ],
+  "execution_conversation_summary": {
+    "conversation_id": "0ca6e8b8-5a76-4328-b051-51a73c7e5fbb",
+    "event_count": 13,
+    "execution_status": "paused",
+    "persistence_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/0ca6e8b85a764328b05151a73c7e5fbb",
+    "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128"
+  },
+  "execution_mode": "autonomous-generate",
+  "execution_parent_conversation_id": "39d6b054-db1e-4640-a1fd-950621976c0b",
+  "final_acceptance_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/final_acceptance_summary.json",
+  "finalizer_conversation_id": "a1907e1c-0054-42dc-b1bf-28cb1dd7e6a8",
+  "finalizer_conversation_summary": {
+    "conversation_id": "a1907e1c-0054-42dc-b1bf-28cb1dd7e6a8",
+    "event_count": 14,
+    "execution_status": "finished",
+    "persistence_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/a1907e1c005442dcb1bf28cb1dd7e6a8",
+    "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128"
+  },
+  "finalizer_input_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/finalizer_input.json",
+  "focus_module_id": "aes128_encrypt_core",
+  "fragility_memory_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/fragility_memory.json",
+  "generation_plan_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/generation_plan.json",
+  "plan_dag_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/plan_dag.json",
+  "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promotion_events.json",
+  "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promotion_failures.json",
+  "spec_ir_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/spec_ir.json",
+  "state_trace": [
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "ARCHITECTING",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "SPEC_INTAKE",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "PLANNING",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "ARCHITECTING",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_DESIGN",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "PLANNING",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L0",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_DESIGN",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L1",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_L0",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L2_OPTIONAL",
+      "profile": "deepseek_official_fast",
+      "requires_l2": true,
+      "state": "MODULE_L1",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "INTEGRATION_READY",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_L2_OPTIONAL",
+      "subagent_policy": "l2_campaign_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "INTEGRATION_REGRESSION",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "INTEGRATION_READY",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "DONE",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "INTEGRATION_REGRESSION",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": null,
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "DONE",
+      "subagent_policy": "forbidden"
+    }
+  ],
+  "workflow_gate_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/workflow_gate.json"
+}

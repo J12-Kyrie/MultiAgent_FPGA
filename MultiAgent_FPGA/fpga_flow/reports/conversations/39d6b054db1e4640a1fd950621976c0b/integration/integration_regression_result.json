@@ -1,0 +1,148 @@
+{
+  "artifact_type": "integration_regression_result",
+  "back_to_back_required": true,
+  "build_output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/obj_dir",
+  "campaign_results": [
+    {
+      "campaign": "baseline",
+      "checkpoint_summary": {
+        "CHK_BUSY_ASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_BUSY_DEASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_CIPHERTEXT_MATCH": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_DONE_PULSE": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_RESET_CLEAR": "PASS|reset_release",
+        "CHK_START_ACCEPTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt"
+      },
+      "failed_checkpoints": [],
+      "log_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.log",
+      "missing_checkpoints": [],
+      "output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration",
+      "passed_checkpoints": [
+        "CHK_RESET_CLEAR",
+        "CHK_START_ACCEPTED",
+        "CHK_BUSY_ASSERTED",
+        "CHK_DONE_PULSE",
+        "CHK_CIPHERTEXT_MATCH",
+        "CHK_BUSY_DEASSERTED"
+      ],
+      "sim_result": "Simulation Passed\nSimulation Time: 10000 time units\nReal Time: 378ms\n\nLog File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.log\nWaveform File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.vcd\n\nStatistics:\n  Cycles: 0\n  Events: 0\n  Memory: 48.32MB\n",
+      "waveform_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.vcd"
+    },
+    {
+      "campaign": "back_to_back",
+      "checkpoint_summary": {
+        "CHK_BUSY_ASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_BUSY_DEASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_CIPHERTEXT_MATCH": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_DONE_PULSE": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_RESET_CLEAR": "PASS|reset_release",
+        "CHK_START_ACCEPTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt"
+      },
+      "failed_checkpoints": [],
+      "log_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/back_to_back/simulation.log",
+      "missing_checkpoints": [],
+      "output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/back_to_back",
+      "passed_checkpoints": [
+        "CHK_RESET_CLEAR",
+        "CHK_START_ACCEPTED",
+        "CHK_BUSY_ASSERTED",
+        "CHK_DONE_PULSE",
+        "CHK_CIPHERTEXT_MATCH",
+        "CHK_BUSY_DEASSERTED"
+      ],
+      "sim_result": "Simulation Passed\nSimulation Time: 10000 time units\nReal Time: 3ms\n\nLog File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/back_to_back/simulation.log\nWaveform File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/back_to_back/simulation.vcd\n\nStatistics:\n  Cycles: 0\n  Events: 0\n  Memory: 47.67MB\n",
+      "waveform_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/back_to_back/simulation.vcd"
+    },
+    {
+      "campaign": "mid_reset",
+      "checkpoint_summary": {
+        "CHK_BUSY_ASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_BUSY_DEASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_CIPHERTEXT_MATCH": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_DONE_PULSE": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+        "CHK_RESET_CLEAR": "PASS|reset_release",
+        "CHK_START_ACCEPTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt"
+      },
+      "failed_checkpoints": [],
+      "log_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/mid_reset/simulation.log",
+      "missing_checkpoints": [],
+      "output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/mid_reset",
+      "passed_checkpoints": [
+        "CHK_RESET_CLEAR",
+        "CHK_START_ACCEPTED",
+        "CHK_BUSY_ASSERTED",
+        "CHK_DONE_PULSE",
+        "CHK_CIPHERTEXT_MATCH",
+        "CHK_BUSY_DEASSERTED"
+      ],
+      "sim_result": "Simulation Passed\nSimulation Time: 10000 time units\nReal Time: 3ms\n\nLog File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/mid_reset/simulation.log\nWaveform File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/mid_reset/simulation.vcd\n\nStatistics:\n  Cycles: 0\n  Events: 0\n  Memory: 47.68MB\n",
+      "waveform_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/mid_reset/simulation.vcd"
+    }
+  ],
+  "checkpoint_contract": "CHECKPOINT|<name>|PASS|<detail>",
+  "checkpoint_summary": {
+    "CHK_BUSY_ASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+    "CHK_BUSY_DEASSERTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+    "CHK_CIPHERTEXT_MATCH": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+    "CHK_DONE_PULSE": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+    "CHK_RESET_CLEAR": "PASS|reset_release",
+    "CHK_START_ACCEPTED": "PASS|/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt"
+  },
+  "compile_files": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_sbox/rtl/aes_sbox.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_key_schedule_128/rtl/aes_key_schedule_128.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes_round_transform/rtl/aes_round_transform.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/rtl/aes128_encrypt_core.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/promoted/aes128_encrypt_core/tb/aes128_encrypt_core_tb.cpp"
+  ],
+  "compile_result": "Compilation Successful\nOutput Directory: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/obj_dir\nExecutable: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/obj_dir/Vaes128_encrypt_core\n\nStatistics:\n  Modules: 6\n  Lines: 0\n",
+  "failed_checkpoints": [],
+  "interface_freeze_hash": "aes-128-block_handshake-iterative_10_round-autonomous-v1",
+  "latency_target_cycles": 11,
+  "log_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.log",
+  "mid_reset_scenarios": [
+    "reset_during_busy",
+    "reset_after_done"
+  ],
+  "missing_checkpoints": [],
+  "module_id": "aes128_encrypt_core",
+  "passed_checkpoints": [
+    "baseline:CHK_RESET_CLEAR",
+    "baseline:CHK_START_ACCEPTED",
+    "baseline:CHK_BUSY_ASSERTED",
+    "baseline:CHK_DONE_PULSE",
+    "baseline:CHK_CIPHERTEXT_MATCH",
+    "baseline:CHK_BUSY_DEASSERTED",
+    "back_to_back:CHK_RESET_CLEAR",
+    "back_to_back:CHK_START_ACCEPTED",
+    "back_to_back:CHK_BUSY_ASSERTED",
+    "back_to_back:CHK_DONE_PULSE",
+    "back_to_back:CHK_CIPHERTEXT_MATCH",
+    "back_to_back:CHK_BUSY_DEASSERTED",
+    "mid_reset:CHK_RESET_CLEAR",
+    "mid_reset:CHK_START_ACCEPTED",
+    "mid_reset:CHK_BUSY_ASSERTED",
+    "mid_reset:CHK_DONE_PULSE",
+    "mid_reset:CHK_CIPHERTEXT_MATCH",
+    "mid_reset:CHK_BUSY_DEASSERTED"
+  ],
+  "regression_checkpoints": [
+    "CHK_RESET_CLEAR",
+    "CHK_START_ACCEPTED",
+    "CHK_BUSY_ASSERTED",
+    "CHK_DONE_PULSE",
+    "CHK_CIPHERTEXT_MATCH",
+    "CHK_BUSY_DEASSERTED"
+  ],
+  "required_modules": [
+    "aes_sbox",
+    "aes_key_schedule_128",
+    "aes_round_transform",
+    "aes128_encrypt_core"
+  ],
+  "sim_output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration",
+  "sim_result": "Simulation Passed\nSimulation Time: 10000 time units\nReal Time: 378ms\n\nLog File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.log\nWaveform File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.vcd\n\nStatistics:\n  Cycles: 0\n  Events: 0\n  Memory: 48.32MB\n",
+  "status": "passed",
+  "vector_set": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_regress.txt",
+  "waveform_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/39d6b054db1e4640a1fd950621976c0b/integration/simulation.vcd"
+}

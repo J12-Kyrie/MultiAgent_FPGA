@@ -1,0 +1,15 @@
+{
+  "batch_failure": null,
+  "batch_id": "integration",
+  "effective_gate_satisfied": true,
+  "focus_module_id": "aes128_encrypt_core",
+  "pause_reason": "batch_gate_satisfied",
+  "phase": "integration",
+  "promoted_modules": [
+    "aes128_encrypt_core",
+    "aes_key_schedule_128",
+    "aes_round_transform",
+    "aes_sbox"
+  ],
+  "protocol_violation": null
+}

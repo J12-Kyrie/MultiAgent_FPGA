@@ -1,0 +1,7 @@
+{
+  "batch_id": "integration",
+  "gate_satisfied": true,
+  "pause_reason": "batch_gate_satisfied",
+  "phase": "integration",
+  "timestamp": "2026-05-15T13:41:37.409270+00:00"
+}
