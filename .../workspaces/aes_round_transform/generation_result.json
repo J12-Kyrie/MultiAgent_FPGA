@@ -1,0 +1,44 @@
+{
+  "changed_files": [],
+  "checkpoint_summary": {},
+  "design_brief_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/contracts/design_brief.json",
+  "draft_rtl_paths": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/draft/rtl/aes_round_transform.v"
+  ],
+  "draft_tb_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/draft/tb/aes_round_transform_tb.cpp",
+  "edit_receipt_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/edit_receipt.json",
+  "failed_checkpoints": [],
+  "missing_checkpoints": [
+    "CHK_ROUND_STATE_MATCH"
+  ],
+  "module_id": "aes_round_transform",
+  "placeholder_files": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/draft/rtl/aes_round_transform.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/draft/tb/aes_round_transform_tb.cpp"
+  ],
+  "promoted": false,
+  "promoted_targets": {
+    "rtl": "{\"aes_round_transform.v\": \"/Users/kyrie/Downloads/OpenHands-1.5.0/.../promoted/aes_round_transform/rtl/aes_round_transform.v\"}",
+    "tb": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../promoted/aes_round_transform/tb/aes_round_transform_tb.cpp"
+  },
+  "recommended_mode": "repair",
+  "repair_attempts": 0,
+  "repair_guidance": [
+    "Replace scaffold placeholders before the next validation pass in: /Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/draft/rtl/aes_round_transform.v, /Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/draft/tb/aes_round_transform_tb.cpp",
+    "Update the draft testbench so it emits the required CHECKPOINT lines using the frozen contract CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail>: CHK_ROUND_STATE_MATCH",
+    "Resolve compile or elaboration warnings/errors before rerunning the executor command."
+  ],
+  "repair_request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/repair_request.json",
+  "scaffold_detected": true,
+  "validation_paths": {
+    "l0_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/validation/l0_result.json",
+    "module_run_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/validation/sim/module_run_result.json",
+    "simulation_log": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/validation/sim/simulation.log",
+    "validation_error": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/validation/validation_error.json",
+    "validation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/validation/validation_summary.json",
+    "waveform": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/validation/sim/simulation.vcd"
+  },
+  "validation_status": "failed",
+  "workspace_state": "repairing",
+  "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/workspace_state.json"
+}

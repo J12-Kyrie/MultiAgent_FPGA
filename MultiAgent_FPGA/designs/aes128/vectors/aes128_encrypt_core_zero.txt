@@ -1,0 +1,5 @@
+# AES-128 all-zero regression vector
+key=00000000000000000000000000000000
+plaintext=00000000000000000000000000000000
+ciphertext=66e94bd4ef8a2c3b884cfa59ca342b2e
+latency_cycles=11

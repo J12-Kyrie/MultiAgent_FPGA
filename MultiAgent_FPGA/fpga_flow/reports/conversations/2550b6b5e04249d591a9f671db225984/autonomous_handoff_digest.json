@@ -1,0 +1,12 @@
+{
+  "batch_failure": null,
+  "batch_id": "integration",
+  "effective_gate_satisfied": true,
+  "focus_module_id": "led_chaser",
+  "pause_reason": "batch_gate_satisfied",
+  "phase": "integration",
+  "promoted_modules": [
+    "led_chaser"
+  ],
+  "protocol_violation": null
+}

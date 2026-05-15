@@ -1,0 +1,260 @@
+# AES-128 Encrypt-Only Design Blueprint
+# Extracted from _aes_blueprints() in synthesis.py
+
+design:
+  name: aes128_encrypt
+  scope: "AES-128 encrypt-only FPGA full-system with block-level handshake and iterative 10-round microarchitecture"
+  language: verilog
+  autonomous_goal: >-
+    Autonomously design, implement, validate, repair, and integrate an AES-128
+    encrypt-only FPGA full-system using block-level handshake and an iterative
+    10-round microarchitecture.
+  algorithm: AES
+  variant: AES-128
+  operation: encrypt
+  interface_style: block_handshake
+  microarchitecture: iterative_10_round
+  block_width: 128
+  key_width: 128
+  clock_reset_assumptions:
+    clock: "single synchronous rising-edge clock"
+    reset: "active-low reset for top-level control paths"
+  timing_targets:
+    latency_cycles: 11
+    throughput: "one block per transaction"
+  latency_target_cycles: 11
+  accept_condition: "sample key/plaintext when start && !busy"
+  output_valid_condition: "done pulse with stable ciphertext"
+  frozen_interfaces:
+    - clk
+    - rst_n
+    - start
+    - "key[127:0]"
+    - "plaintext[127:0]"
+    - busy
+    - done
+    - "ciphertext[127:0]"
+  verification_redlines:
+    - "do not use SystemVerilog-only syntax"
+    - "do not use generated testbenches on the stable path"
+    - "do not bypass executor-based compile and simulation validation"
+
+memory_required: true
+
+modules:
+  # --- aes_sbox (leaf, no dependencies) ---
+  - id: aes_sbox
+    rtl: rtl/aes_sbox.v
+    tb: tb/aes_sbox_tb.cpp
+    depends_on: []
+    checkpoints:
+      - CHK_SBOX_MATCH
+    integration_role: leaf
+    vectors: "vectors/aes_sbox_kat.txt"
+    criticality: medium
+    l2_policy: skip
+    checkpoint_contract: "CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail>"
+    latency_expectation: combinational_lookup
+    vector_hint_style: hex_pair_lookup
+    summary: "Implement the combinational AES S-box byte substitution."
+    ports:
+      - {name: in_byte, direction: input, width: 8, description: "Input byte to substitute."}
+      - {name: out_byte, direction: output, width: 8, description: "Substituted output byte."}
+    design_goals:
+      - "Preserve the frozen aes_sbox interface exactly."
+      - "Implement pure combinational substitution with no sequential state."
+      - "Produce CHK_SBOX_MATCH through the self-checking .cpp testbench."
+    vector_format: "Exhaustive byte sweep plus optional vecfile with in_hex/out_hex pairs."
+    plusargs:
+      - "+profile=rand_small|rand_medium"
+      - "+cases"
+      - "+seed"
+      - "+vecfile"
+    prohibited_constructs:
+      - "Do not introduce SystemVerilog-only syntax."
+      - "Do not rename frozen ports or checkpoint identifiers."
+      - "Do not edit cross-module architecture from a node-local task."
+
+  # --- aes_key_schedule_128 (depends on aes_sbox) ---
+  - id: aes_key_schedule_128
+    rtl: rtl/aes_key_schedule_128.v
+    tb: tb/aes_key_schedule_128_tb.cpp
+    depends_on:
+      - aes_sbox
+    checkpoints:
+      - CHK_ROUNDKEY_MATCH
+    integration_role: leaf
+    vectors: "vectors/aes_key_schedule_128_kat.txt"
+    criticality: high
+    l2_policy: conditional
+    checkpoint_contract: "CHECKPOINT|CHK_ROUNDKEY_MATCH|PASS|<detail>"
+    latency_expectation: round_key_per_cycle
+    summary: "Implement the AES-128 round-key expansion helper."
+    ports:
+      - {name: key, direction: input, width: 128, description: "Current key input used to derive the requested round key."}
+      - {name: round_index, direction: input, width: 4, description: "Round selector in the range 0..10."}
+      - {name: round_key, direction: output, width: 128, description: "Derived AES-128 round key for the requested round."}
+    design_goals:
+      - "Preserve the frozen aes_key_schedule_128 interface exactly."
+      - "Support round_index values 0 through 10."
+      - "Produce CHK_ROUNDKEY_MATCH through the self-checking .cpp testbench."
+    vector_format: "Key/value file with round_key_0 through round_key_10 entries."
+    plusargs:
+      - "+profile=rand_small|rand_medium"
+      - "+cases"
+      - "+seed"
+      - "+vecfile"
+    prohibited_constructs:
+      - "Do not introduce SystemVerilog-only syntax."
+      - "Do not rename frozen ports or checkpoint identifiers."
+      - "Do not edit cross-module architecture from a node-local task."
+    l2_profiles:
+      - rand_small
+      - rand_medium
+    l2_defaults:
+      rand_small:
+        vecfile: "vectors/aes_key_schedule_128_kat.txt"
+        cases: 8
+        seed: 7
+      rand_medium:
+        vecfile: "vectors/aes_key_schedule_128_kat.txt"
+        cases: 16
+        seed: 17
+
+  # --- aes_round_transform (depends on aes_sbox) ---
+  - id: aes_round_transform
+    rtl: rtl/aes_round_transform.v
+    tb: tb/aes_round_transform_tb.cpp
+    depends_on:
+      - aes_sbox
+    checkpoints:
+      - CHK_ROUND_STATE_MATCH
+    integration_role: leaf
+    worker_prompt_hint: "MixColumns byte-packing uses a deliberate double-reversal. Do not simplify the concatenation order."
+    vectors: "vectors/aes_round_transform_kat.txt"
+    criticality: high
+    l2_policy: conditional
+    checkpoint_contract: "CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail>"
+    latency_expectation: single_round_transform
+    summary: "Implement one AES round transform with optional final-round bypass."
+    ports:
+      - {name: state_in, direction: input, width: 128, description: "Input AES state before the round transform."}
+      - {name: round_key, direction: input, width: 128, description: "Round key for AddRoundKey."}
+      - {name: final_round, direction: input, width: 1, description: "When asserted, bypass MixColumns."}
+      - {name: sub_bytes_state, direction: output, width: 128, description: "Intermediate state after SubBytes."}
+      - {name: shift_rows_state, direction: output, width: 128, description: "Intermediate state after ShiftRows."}
+      - {name: mix_columns_state, direction: output, width: 128, description: "Intermediate state after MixColumns or bypass."}
+      - {name: state_out, direction: output, width: 128, description: "Final state after the round transform."}
+    design_goals:
+      - "Preserve the frozen aes_round_transform interface exactly."
+      - "Support both normal rounds and final-round bypass of MixColumns."
+      - "Produce CHK_ROUND_STATE_MATCH through the self-checking .cpp testbench."
+    vector_format: "Key/value file describing intermediate round states and outputs."
+    plusargs:
+      - "+profile=rand_small|rand_medium"
+      - "+cases"
+      - "+seed"
+      - "+vecfile"
+    prohibited_constructs:
+      - "Do not introduce SystemVerilog-only syntax."
+      - "Do not rename frozen ports or checkpoint identifiers."
+      - "Do not edit cross-module architecture from a node-local task."
+    l2_profiles:
+      - rand_small
+      - rand_medium
+    l2_defaults:
+      rand_small:
+        vecfile: "vectors/aes_round_transform_kat.txt"
+        cases: 8
+        seed: 7
+      rand_medium:
+        vecfile: "vectors/aes_round_transform_kat.txt"
+        cases: 16
+        seed: 17
+
+  # --- aes128_encrypt_core (top, depends on key_schedule + round_transform) ---
+  - id: aes128_encrypt_core
+    rtl: rtl/aes128_encrypt_core.v
+    tb: tb/aes128_encrypt_core_tb.cpp
+    depends_on:
+      - aes_key_schedule_128
+      - aes_round_transform
+    checkpoints:
+      - CHK_RESET_CLEAR
+      - CHK_START_ACCEPTED
+      - CHK_BUSY_ASSERTED
+      - CHK_DONE_PULSE
+      - CHK_CIPHERTEXT_MATCH
+      - CHK_BUSY_DEASSERTED
+    integration_role: top
+    vectors: "vectors/aes128_encrypt_core_kat.txt"
+    criticality: high
+    l2_policy: required
+    checkpoint_contract: "CHECKPOINT|CHK_*|PASS|<detail>"
+    latency_expectation: 11_cycles
+    summary: "Implement the iterative AES-128 encrypt core with block-level handshake."
+    ports:
+      - {name: clk, direction: input, width: 1, description: "Primary rising-edge clock."}
+      - {name: rst_n, direction: input, width: 1, description: "Active-low reset."}
+      - {name: start, direction: input, width: 1, description: "Start pulse sampled when busy is low."}
+      - {name: key, direction: input, width: 128, description: "AES-128 key input."}
+      - {name: plaintext, direction: input, width: 128, description: "AES plaintext input block."}
+      - {name: busy, direction: output, width: 1, description: "Busy indicator for the active encryption window."}
+      - {name: done, direction: output, width: 1, description: "Single-cycle completion pulse."}
+      - {name: ciphertext, direction: output, width: 128, description: "Ciphertext output block."}
+    design_goals:
+      - "Preserve the frozen top-level handshake and signal names exactly."
+      - "Honor the 11-cycle latency target and ignore start while busy."
+      - "Produce the frozen top-level checkpoint set through the self-checking .cpp testbench."
+    vector_format: "Key/value file with key, plaintext, ciphertext, and optional L2 profiles."
+    plusargs:
+      - "+profile=rand_small|rand_medium|back_to_back|mid_reset"
+      - "+cases"
+      - "+seed"
+      - "+vecfile"
+    prohibited_constructs:
+      - "Do not introduce SystemVerilog-only syntax."
+      - "Do not rename frozen ports or checkpoint identifiers."
+      - "Do not edit cross-module architecture from a node-local task."
+    l2_profiles:
+      - rand_small
+      - rand_medium
+      - back_to_back
+      - mid_reset
+    l2_defaults:
+      rand_small:
+        vecfile: "vectors/aes128_encrypt_core_l2_rand_small.txt"
+      rand_medium:
+        vecfile: "vectors/aes128_encrypt_core_l2_rand_medium.txt"
+      back_to_back:
+        vecfile: "vectors/aes128_encrypt_core_l2_back_to_back.txt"
+      mid_reset:
+        vecfile: "vectors/aes128_encrypt_core_l2_mid_reset.txt"
+    design_context:
+      integration_vector_set: "vectors/aes128_encrypt_core_regress.txt"
+      integration_checkpoints:
+        - CHK_RESET_CLEAR
+        - CHK_START_ACCEPTED
+        - CHK_BUSY_ASSERTED
+        - CHK_DONE_PULSE
+        - CHK_CIPHERTEXT_MATCH
+        - CHK_BUSY_DEASSERTED
+      mid_reset_scenarios:
+        - reset_during_busy
+        - reset_after_done
+
+integration:
+  top_module: aes128_encrypt_core
+  vector_set: "vectors/aes128_encrypt_core_regress.txt"
+  regression_checkpoints:
+    - CHK_RESET_CLEAR
+    - CHK_START_ACCEPTED
+    - CHK_BUSY_ASSERTED
+    - CHK_DONE_PULSE
+    - CHK_CIPHERTEXT_MATCH
+    - CHK_BUSY_DEASSERTED
+  back_to_back_required: true
+  mid_reset_scenarios:
+    - reset_during_busy
+    - reset_after_done
+  checkpoint_contract: "CHECKPOINT|<name>|PASS|<detail>"

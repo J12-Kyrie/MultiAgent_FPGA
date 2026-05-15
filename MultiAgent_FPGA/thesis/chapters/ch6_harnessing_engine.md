@@ -4,7 +4,7 @@
 
 ### 6.1.1 问题定义：LLM在硬件设计中的失败模式
 
-大语言模型在硬件设计任务中展现出令人期待的代码生成能力，但同时暴露出若干系统性失败模式，这些失败模式在FPGA RTL生成场景中尤为突出：
+大语言模型在代码生成任务中展现出令人期待的能力，但同时暴露出若干系统性失败模式。在硬件设计自动化这一高精度、强约束的应用场景中，这些失败模式尤为突出，且具有跨设计对象的共性——无论目标是密码学模块、信号处理 IP 核还是总线控制器，LLM 均可能产生以下五类失败：
 
 **失败模式一：幻觉端口/信号**。LLM在生成Verilog代码时，可能凭借训练数据中的统计模式"自行发明"实际不存在的端口（如将`key_in`改写为`key_data`），或在例化子模块时连接错误的端口名称。由于Verilog对未声明信号有时会静默警告而非报错，这类错误可能通过编译但在仿真阶段才暴露。
 
@@ -18,17 +18,17 @@
 
 ### 6.1.2 Harnessing Engine设计理念
 
-针对上述失败模式，本文提出"Harnessing Engine"（驾驭引擎）概念。其核心设计理念是：**不依赖LLM自律，通过结构化的外部约束从六个层面系统性地驾驭LLM行为**。
-
-"Harnessing"（驾驭）一词的选择具有深刻的工程意涵：驾驭不是压制，而是通过设计良好的约束结构，引导LLM的能力在期望的范围内发挥作用。如同马具（harness）不限制马的力量，而是引导其方向，Harnessing Engine不试图消除LLM的创造性，而是通过六层约束确保这种创造性不会越出工程规约的边界。
+针对上述失败模式，本文提出"Harnessing Engine"（驾驭引擎）概念，作为一种通用的 LLM 行为约束框架模式。其核心设计理念是：**不依赖 LLM 自律，通过结构化的外部约束从六个层面系统性地驾驭 LLM 行为**。Harnessing Engine 的六层架构（Skill/Prompt/Memory/Hooks/MCP/SlashCommand）是领域无关的约束模式——每一层的约束机制均可通过替换领域内容适配不同的硬件设计目标，甚至扩展到软件工程等其他 LLM 应用场景。
 
 Harnessing Engine的六层约束从架构上形成了一个完整的防御体系：
 
-[图6-1: Harnessing Engine六层架构图（从Skill领域知识注入到SlashCommand用户接口）]
+![图6-1: Harnessing Engine六层约束架构总览](../fpga_flow/diagrams/16_harnessing_engine.png)
+
+![图6-2: Prompt合成流程](../fpga_flow/diagrams/10_prompt_composition.png)
 
 六层约束的分工如下表所示：
 
-[表6-1: LLM失败模式-约束层级防御矩阵（详见6.8节）]
+**表 6-1: LLM失败模式-约束层级防御矩阵（详见6.8节）**
 
 ---
 
@@ -36,48 +36,34 @@ Harnessing Engine的六层约束从架构上形成了一个完整的防御体系
 
 ### 6.2.1 三级Skill注册体系
 
-本系统构建了由16个Skill文件组成的三级注册体系，通过`skill_refs.py`统一管理。三级注册体系的分工严格区分了运行时注入与离线参考的职责：
+Skill 层的三级注册体系（运行时/内存/文档）是一种通用的领域知识管理架构。运行时 Skill 注入运行时约束，内存 Skill 提供领域设计知识，文档 Skill 辅助离线合成。这一三级架构可直接复用于其他硬件设计——替换 Skill 文件内容即可适配新的设计领域。本框架构建了由16个Skill文件组成的三级注册体系，通过技能引用管理模块统一管理，按使用场景严格区分职责：
 
-**运行时Skill（Runtime Skills，5个）**：通过`get_runtime_skill_refs()`（`aes_mvp/skill_refs.py:22-51`）获取，直接注入到Agent的系统提示词中，在运行时作为硬约束约束Agent行为：
+**表 6-X: 三级Skill注册体系**
 
-| Skill键 | 名称 | 用途 |
-|---------|------|------|
-| `aes_verilator_profile` | aes-verilator-profile | AES节点分类、向量、Checkpoint、L2约定 |
-| `aes_module_patterns` | aes-module-patterns | S-box、密钥扩展、轮变换、顶层集成的参考模式 |
-| `aes_tb_contracts` | aes-tb-contracts | 自检C++ Testbench契约、向量和Checkpoint语义 |
-| `aes_repair_heuristics` | aes-repair-heuristics | 编译/Checkpoint/延迟/握手失败的修复启发式规则 |
-| `openhands_sdk_subagent_delegation` | openhands-sdk-subagent-delegation | 子Agent注册、spawn、委派和任务边界规则 |
+| 层级 | 数量 | 注入方式 | 职责 |
+|------|------|----------|------|
+| 运行时Skill | 5个 | 每次对话注入系统提示词 | 硬约束：节点分类、模块模式、TB契约、修复启发式、子Agent边界 |
+| 内存Skill | 5个 | 按模块按需注入工作区 | 经过验证的领域设计知识 |
+| 文档Skill | 6个 | 离线合成阶段使用 | 设计简报生成参考，不注入运行时 |
 
-**内存Skill（Memory Skills，5个）**：通过`get_memory_skill_refs()`（`aes_mvp/skill_refs.py:54-83`）获取，由`MemoryStore`管理，包含验证通过的AES参考RTL代码，用于工作区预填充：
-
-| Skill键 | 对应模块 | 内容 |
-|---------|---------|------|
-| `aes_memory_sbox` | aes_sbox | 验证通过的S-box RTL+TB参考实现 |
-| `aes_memory_key_schedule` | aes_key_schedule_128 | 验证通过的密钥扩展RTL+TB参考实现 |
-| `aes_memory_round_transform` | aes_round_transform | 验证通过的轮变换RTL+TB参考实现 |
-| `aes_memory_encrypt_core` | aes128_encrypt_core | 验证通过的顶层加密核RTL+TB参考实现 |
-| `aes_memory_shared` | 公共 | aes_sbox_lut.vh + aes_tb_common.hpp上下文 |
-
-**文档Skill（Documentation Skills，6个）**：通过`get_documentation_skill_refs()`（`aes_mvp/skill_refs.py:86-120`）获取，供`synthesis.py`中的`ModuleDesignBrief`生成使用，不注入Agent运行时提示词。
-
-[表6-2: 16个Skill文件分类表（名称、类型、用途）]
+三级之间通过技能引用管理模块的三个注册函数严格隔离，防止职责混淆。
 
 ### 6.2.2 Skill分组与按角色注入
 
-Skill按Agent角色分组，实现精准注入。`WORKER_FPGA_CORE_SKILL_KEYS`（`aes_mvp/skill_refs.py:158-163`）包含3个核心Worker技能；`REPAIR_CORE_SKILL_KEYS`仅包含`aes_repair_heuristics`；`ORCHESTRATOR_CORE_SKILL_KEYS`仅包含`aes_verilator_profile`。
+Skill按Agent角色分组，实现精准注入。工作者核心技能键集包含3个核心Worker技能；修复核心技能键集仅包含修复启发式技能；编排器核心技能键集仅包含verilator-profile技能。
 
-`select_worker_skill_keys(active_mode)`函数根据当前工作模式动态选择技能子集：generate模式使用`WORKER_FPGA_CORE_SKILL_KEYS`，repair模式使用`REPAIR_CORE_SKILL_KEYS`，l2_execute模式使用`L2_WORKER_SKILL_KEYS`（仅`aes_verilator_profile`）。这一按模式精准注入的设计减少了提示词的冗余信息，降低了LLM"混淆技能"的可能性。
+技能选择函数根据当前工作模式动态选择技能子集：generate模式使用工作者核心技能键集，repair模式使用修复核心技能键集，l2_execute模式使用L2工作者技能键集（仅verilator-profile技能）。这一按模式精准注入的设计减少了提示词的冗余信息，降低了LLM"混淆技能"的可能性。
 
-### 6.2.3 SKILLS_AS_AUTHORITY_CONTRACT
+### 6.2.3 技能权威性合约
 
-`SKILLS_AS_AUTHORITY_CONTRACT`（`aes_mvp/prompt_contracts.py:72-77`）是Skill层的元约束：
+技能权威性合约是Skill层的元约束：
 
-```
+```text
 Repository skills are the authority for FPGA, Verilator, and SDK policy;
 do not paraphrase or restate them.
 ```
 
-这一约束明确告知Agent：Skill文件是工程策略的权威来源，Agent不得根据自身训练数据"推断"或"改写"技能内容。与胡昆越AutoGen方案的对比：该方案仅有`system_message`中的纯文本指令，无结构化技能体系，Agent可能基于通用训练数据"自行推断"HDL设计规则，而这些推断与项目规约可能存在偏差。
+这一约束明确告知Agent：Skill文件是工程策略的权威来源，Agent不得根据自身训练数据"推断"或"改写"技能内容。与AutoGen等技术路线方案的对比：该方案仅有系统消息中的纯文本指令，无结构化技能体系，Agent可能基于通用训练数据"自行推断"HDL设计规则，而这些推断与项目规约可能存在偏差。
 
 ---
 
@@ -85,154 +71,97 @@ do not paraphrase or restate them.
 
 ### 6.3.1 可组合Prompt架构
 
-本系统的提示词不是单一的静态字符串，而是通过`compose_prompt()`函数（`aes_mvp/prompt_contracts.py:32-49`）将四层组件动态组合而成：
+可组合 Prompt 架构（基础合约 + 阶段混入 + 实例负载）是一种领域无关的提示词工程模式。基础合约定义不可覆盖的硬约束，阶段混入提供阶段适配的补充约束，实例负载注入任务具体参数。这一组合机制使得框架能够为不同设计对象的不同执行阶段精确定制 Agent 行为约束。
 
-```python
-def compose_prompt(
-    role_intro: str,
-    *,
-    base_contracts: Iterable[BaseContract],
-    phase_mixins: Iterable[PhaseMixin] = (),
-    instance_payload: InstancePayload | None = None,
-    skill_block: str | None = None,
-) -> str:
-```
-
-四层组件的职责划分如下：
-
-[图6-2: Prompt合成流程图（角色引言 → BaseContract硬约束 → PhaseMixin阶段约束 → InstancePayload实例负载 → SkillBlock技能块）]
+本框架的提示词不是单一的静态字符串，而是通过提示词合成函数将四层组件动态组合而成。该函数接收角色引言、基础合约集合、阶段混入集合、实例负载和技能块等参数，输出完整的系统提示词。四层组件的职责划分如下：
 
 **第一层：角色引言（role_intro）**：声明Agent的身份和职责范围，如`You are the Module Worker SubAgent for aes_sbox.`，确立了任务局部性。
 
-**第二层：基础合约（BaseContract）**：硬约束集合，在所有工作模式下均有效，不可覆盖。5个核心BaseContract的约束维度各异：
+**第二层：基础合约**：硬约束集合，在所有工作模式下均有效，不可覆盖。框架定义了五个核心基础合约，分别从不同维度约束Agent行为：
 
-| BaseContract | 约束维度 | 核心条款 |
-|------------|---------|---------|
-| AES_SCOPE_CONTRACT | 范围锁定 | AES-128加密专用，encrypt-only，block-handshake |
-| STRUCTURED_IO_CONTRACT | IO规范 | 以契约JSON为信息源，禁止cat完整大型JSON文件 |
-| NO_RAW_VERILATOR_CONTRACT | 工具隔离 | 禁止直接调用verilator_compile或verilator_simulate |
-| FRAMEWORK_OWNS_PROGRESS_CONTRACT | 控制权归属 | 框架而非Agent拥有批次推进和工作流完成权 |
-| SKILLS_AS_AUTHORITY_CONTRACT | 权威源 | Skill文件是FPGA/Verilator/SDK策略的权威 |
+| 合约 | 约束维度 |
+|------|----------|
+| 范围合约 | 锁定设计范围，限定encrypt-only与block-handshake模式 |
+| 结构化IO合约 | 以契约JSON为信息源，禁止输出完整大型JSON文件 |
+| 工具隔离合约 | 禁止Agent直接调用底层编译或仿真工具 |
+| 进度控制合约 | 批次推进和工作流完成权归框架而非Agent所有 |
+| 技能权威性合约 | 声明Skill文件是工程策略的权威来源 |
 
-**第三层：阶段混入（PhaseMixin）**：针对当前执行阶段的补充约束，随工作模式动态切换。例如，`REPAIR_PHASE_ROUND_1`要求"第一个工具调用必须是对primary_target_file的file_editor edit"，强制Agent先编辑后验证，防止无效的信息收集操作浪费修复轮次预算。
+**第三层：阶段混入**：针对当前执行阶段的补充约束，随工作模式动态切换。例如，第一轮修复阶段混入要求"第一个工具调用必须是对主要目标文件的编辑操作"，强制Agent先编辑后验证，防止无效的信息收集操作浪费修复轮次预算。
 
-**第四层：实例负载（InstancePayload）**：当前任务的具体参数，如可写文件列表、Campaign参数、特殊行为注记等。
+**第四层：实例负载**：当前任务的具体参数，如可写路径约束列表、Campaign参数、特殊行为注记等。
 
-### 6.3.2 PhaseMixin的阶段适配机制
+此外，Prompt层还包含四条反幻觉指令，分别针对上下文溢出（禁输出大型JSON）、修复预算浪费（首轮必须编辑目标文件）、Scope drift（禁修改冻结接口）和无边界探索（须先读任务合约）四种失败模式。
 
-`_select_phase_mixins(active_mode)`函数（`aes_mvp/prompts.py:89-108`）根据当前工作模式选择阶段混入组合：
+### 6.3.2 阶段混入的阶段适配机制
 
-- `generate`模式：加入`GENERATE_PHASE`和`MEMORY_CONSULTATION_DIRECTIVE`
-- `repair_round_1`：加入`REPAIR_PHASE_ROUND_1`（编辑优先协议）
-- `repair_round_2+`：加入`REPAIR_PHASE_ROUND_2_PLUS`（允许先查看文件当前状态）
-- `validate`模式：加入`VALIDATE_PHASE`（读多写少）
-- `l2_execute`模式：加入`L2_PHASE`（禁止RTL/TB编辑）
+本框架在提示词构建中对**非修复模式**与**修复模式**采用了完全不同的函数路径，这是有意为之的架构分离设计。两种路径的对比如下表所示：
 
-`REPAIR_PHASE_ROUND_1`与`REPAIR_PHASE_ROUND_2_PLUS`的区别体现了对修复过程的精细控制：第一轮修复时，Agent应直接基于`repair_request.json`中的`primary_file_excerpt`和`first_edit_steps`进行编辑，不需要重新阅读文件（内容已在修复请求中提供）；第二轮及后续轮次，先前的编辑可能改变了文件状态，Agent需要先查看当前文件状态再进行针对性修复。
+**表 6-X: 非修复模式与修复模式的阶段混入对比**
 
-### 6.3.3 典型反幻觉指令
+| 维度 | 非修复模式 | 修复模式 |
+|------|-----------|----------|
+| 入口函数 | 阶段混入选择函数（由工作者提示词构建函数调用） | 修复工作器专用提示词构建函数（独立入口） |
+| generate阶段 | 基础混入 + 生成阶段混入 + 记忆咨询指令 | — |
+| validate阶段 | 基础混入 + 验证阶段混入 + 记忆咨询指令 | — |
+| l2_execute阶段 | 基础混入 + L2阶段混入（禁RTL/TB编辑） | — |
+| 首轮修复 | — | 编辑优先协议：首个工具调用必须为目标文件编辑 |
+| 后续轮修复 | — | 允许先查看当前文件状态，以磁盘状态为准 |
+| 领域知识块注入 | 注入 | **不注入**（草稿可能已多轮修改，原始知识不反映当前状态） |
 
-Prompt层包含若干针对特定幻觉模式的反幻觉指令：
-
-- `"Never cat whole large JSON files; use bounded reads only"` — 防止Agent将整个工作区JSON文件内容输出到对话，导致上下文溢出
-- `"first tool call MUST be a file_editor edit on primary_target_file"` — 防止修复Agent在预算有限的情况下浪费调用次数在信息收集上
-- `"Do not change cross-module architecture, frozen interfaces, or integration policy"` — 防止Scope drift
-- `"Do not broadly scan unrelated paths before consulting the task contract"` — 防止Agent在任务开始时进行无边界的文件系统探索
+这一架构分离的设计意图是：修复工作器与生成/验证工作器在行为约束上有本质差异，强制使用独立入口可以防止在修复路径中意外注入生成阶段的约束，确保修复行为始终以当前磁盘状态为基准。
 
 ---
 
-## 6.4 Memory层：验证代码预填充
+## 6.4 Memory层：领域设计知识注入
 
-### 6.4.1 MemoryStore核心机制
+### 6.4.1 记忆存储模块核心机制
 
-`MemoryStore`（`aes_mvp/memory.py:57-174`）是AES参考内存检索的单一信息源，封装了从Skill文件中提取验证通过代码的完整逻辑。其核心注册表为`_MEMORY_REGISTRY`（`aes_mvp/memory.py:18-23`）：
+Memory 层的核心机制——将积累的 FPGA 领域设计知识注入工作区——是一种通用的 LLM 任务降级策略。通过提供高质量领域设计知识，Agent 的任务从"从零生成正确代码"降级为"基于领域设计知识解决集成问题"，显著降低了出错概率。这一策略适用于任何拥有领域知识库的硬件设计领域。在 AES-128 验证案例中，记忆存储模块管理 4 个模块的领域设计知识（RTL 与 Testbench）。
 
-```python
-_MEMORY_REGISTRY: dict[str, str] = {
-    'aes_sbox': 'aes_memory_sbox',
-    'aes_key_schedule_128': 'aes_memory_key_schedule',
-    'aes_round_transform': 'aes_memory_round_transform',
-    'aes128_encrypt_core': 'aes_memory_encrypt_core',
-}
-```
-
-每个`module_id`映射到对应的内存Skill键，Skill文件中包含经过Verilator验证的RTL Verilog和C++ Testbench代码，通过Markdown代码块（````verilog`和````cpp`）标记。`_extract_code_block()`函数（`aes_mvp/memory.py:39-44`）使用正则表达式提取特定语言的代码块内容。
+记忆存储模块是AES参考内存检索的单一信息源，封装了从Skill文件中提取验证通过代码的完整逻辑。其核心注册表将每个模块标识映射到对应的内存Skill键，例如AES的四个模块分别映射到各自的内存技能文件。Skill文件中包含经过Verilator验证的RTL Verilog和C++ Testbench代码，通过Markdown代码块标记。代码块提取函数使用正则表达式解析特定语言的代码块内容。
 
 ### 6.4.2 两种使用模式
 
 Memory层提供两种互补的使用模式：
 
-**`populate_workspace()`**（`aes_mvp/memory.py:114-159`）：生成模式。将参考代码写入工作区`draft/rtl/<module_id>.v`和`draft/tb/<module_id>_tb.cpp`文件。写入采用"仅在不存在时写入"的策略（`if not rtl_path.exists(): rtl_path.write_text(...)`），防止覆盖Agent已进行的修改。若内存提取失败（RTL或TB为None），则抛出`RuntimeError`，这是一个硬错误——框架不允许在无参考实现的情况下进入生成阶段。
+**工作区填充方法**：生成模式。将领域设计知识写入工作区的RTL和Testbench草稿文件。写入采用"仅在不存在时写入"的策略，防止覆盖Agent已进行的修改。若内存提取失败，则抛出运行时错误，这是一个硬错误——框架不允许在无领域设计知识的情况下进入生成阶段。
 
-**`build_prompt_block()`**（`aes_mvp/memory.py:97-112`）：提示词注入模式。将参考代码以`=== MEMORY: <name> ===`块的形式直接注入Agent系统提示词，使Agent在生成模式下能够"看到"参考实现：
+**提示词块构建方法**：提示词注入模式。将领域设计知识以`=== MEMORY: <name> ===`标记块的形式直接注入Agent系统提示词，使Agent在生成模式下能够直接"看到"经过验证的RTL和Testbench代码。
 
-```
-=== MEMORY: aes-memory-sbox ===
-[skill文件内容，含验证通过的Verilog和C++代码]
-=== END MEMORY ===
-```
+### 6.4.3 记忆咨询指令与修复记忆指令的区分
 
-这一设计的核心洞察是：**将Agent的任务从"从零生成正确代码"降级为"基于参考实现解决集成问题"**。从零生成正确的AES RTL代码需要LLM同时掌握AES算法、Verilog语法、Verilator兼容性规约和Checkpoint协议，任何一项理解偏差都会导致失败。而基于参考实现进行适应性修改，Agent只需关注当前任务的具体差异，显著降低了出错概率。
-
-### 6.4.3 MEMORY_CONSULTATION_DIRECTIVE与REPAIR_MEMORY_DIRECTIVE的区分
-
-两个Memory相关的PhaseMixin体现了不同阶段的内存使用策略：
-
-`MEMORY_CONSULTATION_DIRECTIVE`（`aes_mvp/prompt_contracts.py:185-194`）用于generate/validate模式：
-
-```
-Your workspace draft files are pre-populated from verified AES reference memory.
-The === MEMORY === blocks in your system prompt contain the same code that was
-written to your draft files. The reference code passes all Verilator checkpoints.
-You may reproduce it verbatim or adapt it.
-```
-
-`REPAIR_MEMORY_DIRECTIVE`（`aes_mvp/prompt_contracts.py:196-204`）用于repair模式：
-
-```
-Your workspace draft files were originally pre-populated from verified AES reference
-memory. The on-disk draft files are the current truth — they may have been modified
-by prior repair rounds. Do not assume the original reference memory matches the
-current file state. Always read the actual file before editing.
-```
-
-这一区分防止了修复Agent基于"记忆中的参考实现"而非"磁盘上的当前状态"进行修复，避免了修复轮次之间状态不一致的问题。
+记忆咨询指令用于generate/validate模式，允许Agent直接复用系统提示词中注入的经过验证的领域设计知识。修复记忆指令用于repair模式，要求Agent以磁盘上的当前文件状态为准，不得假设原始参考记忆与多轮修复后的文件一致。
 
 ---
 
 ## 6.5 Hooks层：执行回调与门控
 
-### 6.5.1 run_executor自定义工具
+### 6.5.1 执行器调用工具
 
-`run_executor`（`aes_mvp/runtime/execution_tools.py:30-147`）是本系统最重要的约束机制之一，也是Agent触发框架执行动作的唯一合法入口。其设计核心是：**通过单一受控工具替代多个原始工具，在Agent和底层EDA工具之间建立强制性的代理层**。
+执行器调用工具的代理模式适用于任何硬件设计——Agent 通过统一的工具接口触发编译和仿真，无需了解底层 EDA 工具的命令行细节。
 
-`run_executor`的执行流程：
+执行器调用工具是本框架最重要的约束机制之一，也是Agent触发框架执行动作的唯一合法入口。其设计核心是：**通过单一受控工具替代多个原始工具，在Agent和底层EDA工具之间建立强制性的代理层**。Agent通过统一的执行器调用工具触发框架执行动作，框架根据任务合约调度对应的执行器并返回结构化结果。
 
-1. Agent调用`run_executor(request_path=<task_contract.json>)`
-2. `_load_task_contract()`从路径读取并验证任务合约JSON（`DelegateBatchTask` Pydantic模型）
-3. `_infer_executor_kind()`根据任务模式推断执行器类型（GENERATE_NODE、RUN_NODE、RECORD_REPAIR_EDIT）
-4. 调度对应的执行器（`L0Executor`、`L1Executor`、`L2CampaignExecutor`、`IntegrationRegressionExecutor`）
-5. 返回`RunExecutorObservation`，包含执行状态、结果路径和下一步读取提示
+### 6.5.2 执行器观察结果的引导性设计
 
-### 6.5.2 RunExecutorObservation的引导性设计
+执行器观察结果不仅是执行结果的载体，还是Agent下一步行为的引导者。下一步读取路径字段明确告知Agent执行结束后应读取哪些文件；下一步读取提示包含动作类型（读取产物、编辑主要目标文件、等待下一批次、上报编排器）和原因字段，将框架的判断意图以结构化方式传达给Agent。
 
-`RunExecutorObservation`（`aes_mvp/runtime/execution_tools.py:39-116`）不仅是执行结果的载体，还是Agent下一步行为的引导者。`next_read_paths`字段明确告知Agent执行结束后应读取哪些文件；`next_read_hints`中的`NextReadHints`包含`action`（READ_ARTIFACTS、EDIT_PRIMARY_TARGET、WAIT_FOR_NEXT_BATCH、ESCALATE_TO_ORCHESTRATOR）和`reason`字段，将框架的判断意图以结构化方式传达给Agent。
+这一设计的意义在于：Agent接收到执行器调用工具的返回值后，不需要根据自身判断决定下一步查看什么文件或采取什么行动，而是遵循框架通过下一步读取提示提供的明确指示，大幅减少了Agent决策的不确定性。
 
-这一设计的意义在于：Agent接收到`run_executor`的返回值后，不需要根据自身判断决定下一步查看什么文件或采取什么行动，而是遵循框架通过`next_read_hints`提供的明确指示，大幅减少了Agent决策的不确定性。
+### 6.5.3 修复编辑验证函数的哈希验证
 
-### 6.5.3 verify_repair_edit哈希验证
+修复编辑验证函数是Hooks层的另一核心机制，用于机器化验证修复编辑的真实性。其验证逻辑包含两个独立条件：
 
-`verify_repair_edit()`（`aes_mvp/generation.py:680-735`）是Hooks层的另一核心机制，用于机器化验证修复编辑的真实性。其验证逻辑包含两个独立条件：
+**条件一：文件哈希变化验证**。框架在写入修复请求前记录主要目标文件的SHA256哈希值（存入修复合约的编辑验证基线哈希字段），修复后对比当前哈希。若哈希未变化，说明Agent声称已修复但实际未修改文件，验证失败并拒绝推进至重新验证阶段。
 
-**条件一：文件哈希变化验证**。框架在写入修复请求前记录`primary_target_file`的SHA256哈希值（存入`repair_contract.edit_verification['baseline_hashes']`），修复后对比当前哈希。若哈希未变化，说明Agent声称已修复但实际未修改文件，验证失败并拒绝推进至重新验证阶段。
-
-**条件二：必要Token存在验证**。`repair_contract.must_add_tokens`列出修复后文件必须包含的token（如`CHECKPOINT|CHK_XXX|PASS|`），框架验证这些token确实出现在修改后的文件中。验证器还接受等价形式：若token以`CHECKPOINT|`开头，则`emit_checkpoint("CHK_XXX", ...)`调用也被视为满足要求。
+**条件二：必要Token存在验证**。修复合约的必须添加令牌字段列出修复后文件必须包含的token（如`CHECKPOINT|CHK_XXX|PASS|`），框架验证这些token确实出现在修改后的文件中。验证器还接受等价形式：若token以`CHECKPOINT|`开头，则对应的检查点发射函数调用也被视为满足要求。
 
 这一双重验证机制彻底消除了Agent"虚假声称修复成功"的可能性——没有真实的文件修改和必要代码的添加，框架不会进入重新验证阶段。
 
-### 6.5.4 Batch Gate回调机制
+### 6.5.4 批次门控回调机制
 
-框架通过文件系统轮询实现Batch Gate，将文件系统作为Agent和框架之间的通信通道：Agent将执行结果写入工作区文件（如`validation_summary.json`、`module_run_result.json`），框架的`run_current_batch_until_gate()`定期轮询这些文件，判断批次完成条件。当所有节点均有结果文件产生且状态满足门控条件时，框架结束当前批次，推进到下一状态。
+框架通过文件系统轮询实现批次门控，将文件系统作为Agent和框架之间的通信通道：Agent将执行结果写入工作区文件（如验证摘要JSON、模块运行结果JSON），框架的批次门控轮询函数定期检查这些文件，判断批次完成条件。当所有节点均有结果文件产生且状态满足门控条件时，框架结束当前批次，推进到下一状态。
 
 ---
 
@@ -240,25 +169,21 @@ current file state. Always read the actual file before editing.
 
 ### 6.6.1 Model Context Protocol的角色
 
-Model Context Protocol（MCP）是AI Agent与外部工具之间的标准化通信协议。在本系统中，MCP承担着连接LLM Agent与Verilator EDA工具链的桥梁角色，将复杂的Verilator命令行接口封装为Agent可调用的结构化工具接口。
+MCP 工具过滤机制是通用的，可根据不同场景配置排除列表。
 
-[图6-3: MCP通信架构图（Agent → run_executor → VerilatorMCPAdapter → MCP stdio协议 → verilator-mcp Node.js进程 → Verilator可执行文件）]
+Model Context Protocol（MCP）[16]是AI Agent与外部工具之间的标准化通信协议。在本框架中，MCP承担着连接LLM Agent与Verilator EDA工具链的桥梁角色，将复杂的Verilator命令行接口封装为Agent可调用的结构化工具接口。
 
-### 6.6.2 VerilatorMCPAdapter封装细节
+![图6-3: 执行器调度流程](../fpga_flow/diagrams/08_executor_dispatch.png)
 
-`VerilatorMCPAdapter`（`aes_mvp/adapters/verilator.py:122-216`）封装了所有与Verilator MCP服务器的通信细节，对上层执行器（L0/L1/L2/Integration Executor）提供简洁的`compile()`和`simulate()`异步接口。其关键封装逻辑包括：
+![图6-4: MCP Verilator适配器架构](../fpga_flow/diagrams/15_mcp_verilator_adapter.png)
 
-**输入文件过滤**：`_filter_verilator_input_files()`（`aes_mvp/adapters/verilator.py:81-91`）过滤掉目录路径和非标准扩展名文件，只保留`.v`/`.sv`（Verilog源文件）和`.cpp`/`.cc`/`.cxx`（C++ Testbench）。这防止了Agent传入不合法文件路径导致Verilator报错。
+### 6.6.2 Verilator MCP适配器封装细节
 
-**include标志自动生成**：`_verilog_include_directories()`自动提取Verilog源文件的父目录，生成`-I/path/to/rtl`格式的include标志，确保`` `include "aes_sbox_lut.vh" ``等头文件引用能够正确解析。
-
-**C++17标准自动添加**：当编译文件列表中包含C++源文件时，自动在`verilatorFlags`中添加`-CFLAGS -std=c++17`，无需Agent手动指定编译选项。
-
-**plusargs传递**：`aes_mvp_package_root`等运行时参数通过Verilator plusargs机制传递给Testbench，Testbench通过`resolve_path(argc, argv, requested, fallback)`函数读取，实现了向量文件的路径无关解析。
+MCP适配器封装了编译标志推断和文件过滤等实现细节，对上层执行器提供简洁的编译和仿真异步接口。
 
 ### 6.6.3 MCP工具过滤：防止Agent绕过框架
 
-`build_verilator_stdio_server()`（`aes_mvp/adapters/verilator.py:43-74`）配置MCP服务器时，框架在更高层（`SdkAgentFactory`）过滤掉两个MCP工具：`verilator_testbenchgenerator`和`verilator_naturallanguage`。这一过滤的设计意图是：
+MCP服务器配置函数在配置MCP服务器时，框架在更高层的智能体工厂模块过滤掉两个MCP工具：testbench生成器和自然语言接口。这一过滤的设计意图是：
 
 - **禁用testbenchgenerator**：防止Agent绕过框架的C++自检Testbench体系，使用自动生成的Testbench（自动Testbench无法实现Checkpoint协议）
 - **禁用naturallanguage**：防止Agent以自然语言描述方式调用Verilator，绕过框架的结构化执行路径
@@ -271,25 +196,13 @@ Model Context Protocol（MCP）是AI Agent与外部工具之间的标准化通�
 
 ### 6.7.1 CLI命令体系
 
-`__main__.py`（`aes_mvp/__main__.py`）实现了完整的CLI命令体系，每个命令对应一套完整的验证/执行语义：
-
-```bash
-python -m MultiAgent_FPGA.aes_mvp validate           # 契约验证（无需API密钥）
-python -m MultiAgent_FPGA.aes_mvp smoke-sdk           # SDK烟测
-python -m MultiAgent_FPGA.aes_mvp smoke-provider      # DeepSeek API预检
-python -m MultiAgent_FPGA.aes_mvp run-node <module>   # 单节点L0+L1验证
-python -m MultiAgent_FPGA.aes_mvp generate-node <module>  # 工作区初始化+验证
-python -m MultiAgent_FPGA.aes_mvp record-repair-edit <module>  # 记录修复编辑
-python -m MultiAgent_FPGA.aes_mvp run-integration     # 集成回归测试
-python -m MultiAgent_FPGA.aes_mvp run-aes-mvp         # 全流程自主执行
-python -m MultiAgent_FPGA.aes_mvp run-aes-mvp --dry-run  # 干运行（仅规划，不执行）
-```
+CLI 命令体系的语义设计面向通用硬件设计验证流程。主入口模块实现了完整的命令体系，涵盖从环境预检到全流程自主执行的完整验证链路：`validate`命令执行契约验证，无需API密钥即可运行；`smoke-sdk`和`smoke-provider`分别进行SDK环境和LLM API的预检；`run-node`命令对单个模块执行L0编译与L1仿真的完整验证流程；`generate-node`命令初始化工作区并完成记忆预填充与验证；`record-repair-edit`命令记录修复编辑并生成编辑收据；`run-integration`命令执行集成回归测试；`run-aes-mvp`命令驱动全流程自主执行，其`--dry-run`选项支持仅规划不执行的干运行模式。
 
 ### 6.7.2 命令即合约的设计原则
 
-每个CLI命令背后是完整的语义定义：`run-node`命令不仅调用执行器，还管理工作区状态（初始化、验证、修复预算检查）、生成报告文件、更新工作区记录；`record-repair-edit`命令先运行`verify_repair_edit()`验证修复真实性，再调用`write_edit_receipt()`写入编辑收据，为后续重新验证提供可追溯的审计链。
+每个CLI命令背后是完整的语义定义：run-node命令不仅调用执行器，还管理工作区状态（初始化、验证、修复预算检查）、生成报告文件、更新工作区记录；record-repair-edit命令先运行修复编辑验证函数验证修复真实性，再调用编辑收据写入函数写入编辑收据，为后续重新验证提供可追溯的审计链。
 
-`--dry-run`选项实现了规划与执行的分离：框架完成全部初始化（bootstrap、SpecIR/PlanDAG/Manifest合成、Policy验证），但仅输出将要执行的批次计划而不实际调用LLM API，供用户在正式运行前检查执行策略。
+`--dry-run`选项实现了规划与执行的分离：框架完成全部初始化（引导启动、规格IR/计划DAG/集成清单合成、策略验证），但仅输出将要执行的批次计划而不实际调用LLM API，供用户在正式运行前检查执行策略。
 
 ---
 
@@ -299,40 +212,23 @@ python -m MultiAgent_FPGA.aes_mvp run-aes-mvp --dry-run  # 干运行（仅规划
 
 六层约束并非相互独立，而是形成了对LLM失败模式的多层防御体系。下表展示了每种失败模式由哪些约束层级防御：
 
-[表6-3: LLM失败模式-约束层级防御矩阵]
+**表 6-2: LLM失败模式-约束层级防御矩阵**
 
 | 失败模式 | Skill层 | Prompt层 | Memory层 | Hooks层 | MCP层 | SlashCommand层 |
 |---------|--------|---------|---------|--------|------|--------------|
-| **幻觉端口/信号** | `aes_module_patterns`提供正确端口规范；`aes_verilator_profile`明确模块接口 | `AES_SCOPE_CONTRACT`范围锁定；`WORKER_REQUEST_AUTHORITY`以合约为信息源 | `populate_workspace()`写入正确端口的参考RTL；`build_prompt_block()`内联参考实现 | L0编译门控捕获端口连接错误 | Verilator编译器严格验证端口声明 | `validate`命令预检契约完整性 |
-| **语法错误** | `verilog_verilator`提供Verilator合规Verilog规则；`aes_tb_contracts`提供合规TB模式 | `STRUCTURED_IO_CONTRACT`约束输出格式 | 参考实现本身是语法正确的Verilog代码 | L0编译门控精确定位语法错误行；`RunExecutorObservation.next_read_hints`引导读取编译日志 | Verilator编译器是语法权威；自动添加`-CFLAGS -std=c++17` | `run-node`命令明确L0失败含义 |
-| **Scope drift** | `openhands_sdk_subagent_delegation`明确任务边界规则 | `WORKER_LOCAL_SCOPE`限制可写范围；`ORCHESTRATOR_ONLY_CURRENT_BATCH`限制批次范围 | `populate_workspace()`只写入当前模块的draft目录 | `run_executor`只接受当前任务合约路径；`verify_repair_edit()`只验证primary_target_file | 工具过滤禁用可能越界的工具 | 每个命令的workspace_root参数限制操作范围 |
-| **过度修改** | `aes_repair_heuristics`提供最小化修复启发式规则 | `REPAIR_PHASE_ROUND_1`要求首次编辑仅针对primary_target_file；禁止secondary_target_files的预读 | `REPAIR_MEMORY_DIRECTIVE`要求以磁盘状态为准，不基于记忆重写 | `verify_repair_edit()`双重验证（哈希+token）；修复预算限制（默认2次） | — | `record-repair-edit`命令强制显式编辑记录 |
-| **格式错误** | — | `STRUCTURED_IO_CONTRACT`："Never cat whole large JSON files"；以合约JSON为信息源 | 内存注入使用`=== MEMORY ===`块而非原始文件内容 | `RunExecutorObservation.to_llm_content`将执行结果序列化为结构化文本行 | MCP结果通过`_extract_text_from_result()`提取纯文本 | CLI命令输出格式化JSON报告 |
+| **幻觉端口/信号** | 端口规范；模块接口规约 | 范围锁定；合约即权威 | 参考代码含正确端口 | L0编译门控 | 编译器端口验证 | `validate`预检 |
+| **语法错误** | 合规Verilog/TB模式 | 输出格式约束 | 参考代码语法正确 | 定位错误行+引导读日志 | 编译器语法权威 | `run-node`明确语义 |
+| **Scope drift** | 任务边界规则 | 可写范围+批次范围限制 | 仅写当前模块目录 | 工具路径+编辑验证限定范围 | 禁用越界工具 | `workspace_root`限定范围 |
+| **过度修改** | 最小化修复启发式 | 首轮编辑限定目标文件 | 以磁盘状态为准 | 哈希+token双重验证；2次预算 | — | 强制编辑记录 |
+| **格式错误** | — | 禁输出大型JSON | 结构化`=== MEMORY ===`块注入 | 结果序列化为结构化文本 | 提取纯文本 | 格式化JSON报告 |
 
 ### 6.8.2 一个Module Worker的完整约束链路
 
-以`aes_sbox`模块的generate阶段为例，展示六层约束的协同工作：
+以S-box模块的generate阶段为例，展示六层约束的协同工作：
 
-1. **Skill层**：Agent系统提示词注入`aes_verilator_profile`、`aes_module_patterns`、`aes_tb_contracts`三个技能文件，Agent获取S-box模块的端口规范、Checkpoint协议规则和Testbench写法规范
-2. **Prompt层**：`compose_prompt()`组合`AES_SCOPE_CONTRACT`（范围锁定）、`NO_RAW_VERILATOR_CONTRACT`（工具隔离）、`WORKER_LOCAL_SCOPE`（写作范围限于draft/）、`GENERATE_PHASE`（工作区内生成）、`MEMORY_CONSULTATION_DIRECTIVE`（参考内存为权威）
-3. **Memory层**：`MemoryStore.populate_workspace('aes_sbox', workspace_root)`将验证通过的S-box Verilog代码写入`draft/rtl/aes_sbox.v`；`build_prompt_block('aes_sbox')`将参考代码内联到提示词中
-4. **Hooks层**：Agent调用`run_executor(request_path=task_contract.json)` → 框架执行L0+L1 → 若L1通过，`RunExecutorObservation`返回`status: passed`；若L0失败，返回`next_read_hints: [action: EDIT_PRIMARY_TARGET, reason: "compile error"]`
-5. **MCP层**：`VerilatorMCPAdapter`过滤输入文件，自动生成include标志，调用verilator-mcp的`verilator_compile`和`verilator_simulate`工具
-6. **SlashCommand层**：整个过程通过`python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox`触发，命令封装了完整的工作区初始化、执行、报告生成语义
-
-### 6.8.3 与胡昆越方案的约束密度对比
-
-本系统采用六层约束驾驭LLM，而胡昆越AutoGen方案的约束主要集中于单一层（system_message中的自然语言指令）。两种方案的约束密度对比：
-
-| 约束维度 | 本文方案 | 胡昆越方案 |
-|---------|--------|---------|
-| 领域知识注入 | 16个结构化Skill文件，按角色按阶段精准注入 | system_message中的纯文本描述 |
-| 提示词约束 | 5个BaseContract × N个PhaseMixin的可组合结构 | 单一system_message |
-| 代码参考 | MemoryStore提供验证通过的参考RTL+TB | 无结构化代码参考 |
-| 执行验证 | `verify_repair_edit()`哈希验证；Batch Gate轮询 | 依赖Agent自报告 |
-| 工具隔离 | `run_executor`单一入口；MCP工具白名单过滤 | 直接调用Vivado xsim |
-| 操作接口 | 9个语义明确的CLI命令 | `human_input_mode="NEVER"`自运行 |
-
-这一对比表明，本系统的约束密度显著高于单层方案，在多个维度形成了对LLM失败模式的冗余防御。Harnessing Engine的价值在于：即使某一层约束被LLM"绕过"（如Agent忽略了某个Prompt约束），其他层的约束仍能将行为控制在可接受范围内，形成了系统级的鲁棒性。
-
-这种多层约束的设计哲学与系统工程中的"深度防御"原则一脉相承：单点约束在面对LLM的随机性和不可预测性时是脆弱的，而多层冗余约束则能在统计意义上保证系统行为的可靠性。
+1. **Skill层**：Agent系统提示词注入verilator-profile、module-patterns、tb-contracts三个技能文件，Agent获取S-box模块的端口规范、Checkpoint协议规则和Testbench写法规范
+2. **Prompt层**：提示词合成函数组合AES范围合约（范围锁定）、Verilator工具隔离合约（工具隔离）、工作器本地范围混入（写作范围限于草稿目录）、生成阶段混入（工作区内生成）、记忆咨询指令（参考内存为权威）
+3. **Memory层**：记忆存储模块的工作区填充方法将S-box模块的领域设计知识注入草稿RTL文件；提示词块构建方法将领域设计知识内联到提示词中
+4. **Hooks层**：Agent调用执行器调用工具，传入任务合约路径 → 框架执行L0+L1 → 若L1通过，执行器观察结果返回通过状态；若L0失败，返回下一步读取提示（动作：编辑主要目标文件，原因：编译错误）
+5. **MCP层**：Verilator MCP适配器过滤输入文件，自动生成include标志，调用verilator-mcp的编译和仿真工具
+6. **SlashCommand层**：整个过程通过run-node命令触发，命令封装了完整的工作区初始化、执行、报告生成语义

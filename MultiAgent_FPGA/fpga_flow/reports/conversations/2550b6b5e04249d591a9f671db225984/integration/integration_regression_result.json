@@ -1,0 +1,67 @@
+{
+  "artifact_type": "integration_regression_result",
+  "back_to_back_required": false,
+  "build_output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/obj_dir",
+  "campaign_results": [
+    {
+      "campaign": "baseline",
+      "checkpoint_summary": {
+        "CHK_RESET_CLEAR": "PASS|Reset sets leds=0001",
+        "CHK_SHIFT_LEFT": "PASS|Shift left 3 times gives 1000",
+        "CHK_SHIFT_RIGHT": "PASS|Shift right 2 times gives 0010",
+        "CHK_WRAP_AROUND": "PASS|Wrap-around from leftmost gives 0001"
+      },
+      "failed_checkpoints": [],
+      "log_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.log",
+      "missing_checkpoints": [],
+      "output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration",
+      "passed_checkpoints": [
+        "CHK_RESET_CLEAR",
+        "CHK_SHIFT_LEFT",
+        "CHK_SHIFT_RIGHT",
+        "CHK_WRAP_AROUND"
+      ],
+      "sim_result": "Simulation Passed\nSimulation Time: 10000 time units\nReal Time: 1383ms\n\nLog File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.log\nWaveform File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.vcd\n\nStatistics:\n  Cycles: 0\n  Events: 0\n  Memory: 48.52MB\n",
+      "waveform_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.vcd"
+    }
+  ],
+  "checkpoint_contract": "CHECKPOINT|<name>|PASS|<detail>",
+  "checkpoint_summary": {
+    "CHK_RESET_CLEAR": "PASS|Reset sets leds=0001",
+    "CHK_SHIFT_LEFT": "PASS|Shift left 3 times gives 1000",
+    "CHK_SHIFT_RIGHT": "PASS|Shift right 2 times gives 0010",
+    "CHK_WRAP_AROUND": "PASS|Wrap-around from leftmost gives 0001"
+  },
+  "compile_files": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted/led_chaser/rtl/led_chaser.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted/led_chaser/tb/led_chaser_tb.cpp"
+  ],
+  "compile_result": "Compilation Successful\nOutput Directory: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/obj_dir\nExecutable: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/obj_dir/Vled_chaser\n\nStatistics:\n  Modules: 2\n  Lines: 0\n",
+  "failed_checkpoints": [],
+  "interface_freeze_hash": "led_chaser-generic-generic-autonomous-v1",
+  "latency_target_cycles": 1,
+  "log_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.log",
+  "mid_reset_scenarios": [],
+  "missing_checkpoints": [],
+  "module_id": "led_chaser",
+  "passed_checkpoints": [
+    "baseline:CHK_RESET_CLEAR",
+    "baseline:CHK_SHIFT_LEFT",
+    "baseline:CHK_SHIFT_RIGHT",
+    "baseline:CHK_WRAP_AROUND"
+  ],
+  "regression_checkpoints": [
+    "CHK_RESET_CLEAR",
+    "CHK_SHIFT_LEFT",
+    "CHK_SHIFT_RIGHT",
+    "CHK_WRAP_AROUND"
+  ],
+  "required_modules": [
+    "led_chaser"
+  ],
+  "sim_output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration",
+  "sim_result": "Simulation Passed\nSimulation Time: 10000 time units\nReal Time: 1383ms\n\nLog File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.log\nWaveform File: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.vcd\n\nStatistics:\n  Cycles: 0\n  Events: 0\n  Memory: 48.52MB\n",
+  "status": "passed",
+  "vector_set": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/led_chaser/vectors/led_chaser_kat.txt",
+  "waveform_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/simulation.vcd"
+}

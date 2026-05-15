@@ -1,0 +1,65 @@
+{
+  "attempted": 3,
+  "attempts": [
+    {
+      "arguments": {
+        "agent_types": [
+          "framework_integration"
+        ],
+        "command": "spawn",
+        "ids": [
+          "integration"
+        ],
+        "security_risk": "LOW",
+        "summary": "Spawn integration worker for framework integration"
+      },
+      "event_id": "fd2b1554-2cc7-4a85-b366-00ffaee07a35",
+      "tool_call_id": "call_00_bxWjzFeqOrvvT2g2tswzlPtp"
+    },
+    {
+      "arguments": {
+        "agent_types": [
+          "module_worker__led_chaser"
+        ],
+        "command": "spawn",
+        "ids": [
+          "integration"
+        ],
+        "security_risk": "LOW",
+        "summary": "Spawn integration worker with module_worker__led_chaser type"
+      },
+      "event_id": "c01b2a73-f679-4458-9192-8d1188521544",
+      "tool_call_id": "call_00_PYGHaDbsv9LIk4tvG8ak298o"
+    },
+    {
+      "arguments": {
+        "command": "delegate",
+        "security_risk": "LOW",
+        "summary": "Delegate integration task to worker",
+        "tasks": {
+          "integration": "Execute the framework-owned integration regression.\nMode: integration.\nFirst action: call 'run_executor' with this task contract.\nUse the resulting observation to inspect only the named integration artifacts."
+        }
+      },
+      "event_id": "9e42c146-f8ec-437e-b667-037d8fe5a7f6",
+      "tool_call_id": "call_00_N6j8pXq6uycT5VKkbBB2TE8b"
+    }
+  ],
+  "completed": 2,
+  "completions": [
+    {
+      "event_id": "9b5dc623-f5e8-45ff-a388-bdd09b7af4bf",
+      "is_error": true,
+      "tool_call_id": "call_00_bxWjzFeqOrvvT2g2tswzlPtp"
+    },
+    {
+      "event_id": "423224a5-7e93-4b7b-8e78-c53d2acb6dfd",
+      "is_error": false,
+      "tool_call_id": "call_00_PYGHaDbsv9LIk4tvG8ak298o"
+    },
+    {
+      "event_id": "84563634-a8dd-44fa-ab5c-86fe2ac0745b",
+      "is_error": false,
+      "tool_call_id": "call_00_N6j8pXq6uycT5VKkbBB2TE8b"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "checkpoint_contract": "CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail>",
+  "checkpoint_names": [
+    "CHK_ROUND_STATE_MATCH"
+  ],
+  "module_id": "aes_round_transform",
+  "plusargs": [
+    "+profile=rand_small|rand_medium",
+    "+cases",
+    "+seed",
+    "+vecfile"
+  ],
+  "success_rules": [
+    "Emit the required CHECKPOINT lines to simulation.log using the exact frozen contract CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail>.",
+    "Remain self-checking and deterministic for generated vectors.",
+    "Do not rely on auto-generated testbenches."
+  ],
+  "tb_language": "cpp",
+  "vector_format": "Key/value file describing intermediate round states and outputs.",
+  "writable_target": "tb/aes_round_transform_tb.cpp"
+}

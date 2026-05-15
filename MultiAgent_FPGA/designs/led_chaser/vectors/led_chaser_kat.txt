@@ -1,0 +1,9 @@
+# LED Chaser KAT vectors
+# After reset: leds=0001
+# Shift left 3: leds=1000
+# Shift right 2: leds=0010
+# Wrap left from 1000: leds=0001
+reset_leds=0001
+left_3_leds=1000
+right_2_leds=0010
+wrap_leds=0001

@@ -1,0 +1,5 @@
+# input,output
+00,63
+53,ed
+7c,10
+ff,16

@@ -1,0 +1,4 @@
+# L2 campaign seed corpus
+profile=rand_medium
+cases=128
+seed=2001

@@ -1,0 +1,57 @@
+flowchart LR
+    subgraph Agent["LLM Agent"]
+        W["Module Worker\nL2 Campaign Agent"]
+    end
+
+    subgraph Proxy["执行代理层"]
+        RE["run_executor\n— 唯一合法入口 —\n加载合约 → 推断类型 → 分发"]
+    end
+
+    subgraph Executors["四层验证执行器"]
+        direction TB
+        L0["⚡ L0\n编译门控"]
+        L1["🔍 L1\n仿真+Checkpoint"]
+        L2["🎲 L2\n鲁棒性测试"]
+        INT["🔗 Integration\n集成回归"]
+    end
+
+    subgraph Adapter["VerilatorMCPAdapter"]
+        direction TB
+        PRE["预处理\n文件过滤 | 自动 -I 标志\nC++17 | plusargs"]
+        API["compile() / simulate()\n异步 MCP 调用"]
+        PRE --> API
+    end
+
+    subgraph MCP["MCP Server (Node.js)"]
+        direction TB
+        STDIO["stdio 管道通信"]
+        WL["工具白名单\n✅ verilator_compile\n✅ verilator_simulate\n🚫 testbenchgenerator\n🚫 naturallanguage"]
+        STDIO --- WL
+    end
+
+    subgraph Verilator["Verilator"]
+        direction TB
+        VC["编译\nverilator --cc"]
+        VS["仿真\nsimulation.log"]
+        VC --> VS
+    end
+
+    subgraph Parse["Checkpoint 解析"]
+        CP["CHECKPOINT|name|PASS|detail\n→ CheckpointParser\n→ passed / failed / missing"]
+    end
+
+    W -->|"调用"| RE
+    RE --> L0 & L1 & L2 & INT
+    L0 & L1 & L2 & INT --> PRE
+    API -->|"call_tool"| STDIO
+    STDIO --> VC
+    VS --> CP
+    CP -->|"RunExecutorObservation\nnext_read_hints"| W
+
+    style Agent fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style Proxy fill:#fefce8,stroke:#eab308,color:#713f12
+    style Executors fill:#eff6ff,stroke:#3b82f6,color:#1e3a5f
+    style Adapter fill:#e0f2fe,stroke:#0ea5e9,color:#0c4a6e
+    style MCP fill:#f1f5f9,stroke:#64748b,color:#334155
+    style Verilator fill:#fdf2f8,stroke:#ec4899,color:#831843
+    style Parse fill:#f5f3ff,stroke:#8b5cf6,color:#3b0764

@@ -1,0 +1,51 @@
+flowchart TB
+    subgraph HE["Harnessing Engine — 六层 LLM 约束引擎"]
+        direction TB
+
+        subgraph Layers["六层约束架构"]
+            direction LR
+            S["① Skill\n领域知识注入\n16 个文件\n三级注册"]
+            P["② Prompt\n行为约束合成\n5 BaseContract\nN PhaseMixin"]
+            M["③ Memory\n参考代码预填充\nMemoryStore\n任务降级"]
+            H["④ Hooks\n执行代理门控\nrun_executor\nSHA-256 验证"]
+            MC["⑤ MCP\n工具能力供给\n白名单过滤\n隔离危险工具"]
+            SL["⑥ SlashCommand\nCLI 命令体系\n9 个语义命令\ndry-run"]
+            S ~~~ P ~~~ M ~~~ H ~~~ MC ~~~ SL
+        end
+
+        subgraph Matrix["防御矩阵"]
+            direction LR
+            F1["幻觉端口\n①②③④⑤"]
+            F2["语法错误\n①②③④⑤"]
+            F3["Scope Drift\n①②③④⑤⑥"]
+            F4["过度修改\n①②③④"]
+            F5["格式错误\n②③④⑤"]
+        end
+
+        subgraph Compare["vs AutoGen 方案"]
+            direction LR
+            OLD["AutoGen: 1 层约束\nsystem_message 纯文本"]
+            NEW["本框架: 6 层约束\n多维度深度防御"]
+        end
+
+        Layers --> Matrix
+        Matrix --> Compare
+    end
+
+    style HE fill:#fff,stroke:#94a3b8,color:#1e293b
+    style Layers fill:#f8fafc,stroke:#cbd5e1,color:#1e293b
+    style S fill:#dbeafe,stroke:#3b82f6,color:#1e3a5f
+    style P fill:#dcfce7,stroke:#22c55e,color:#14532d
+    style M fill:#fef9c3,stroke:#eab308,color:#713f12
+    style H fill:#ffe4e6,stroke:#f43f5e,color:#881337
+    style MC fill:#e0e7ff,stroke:#6366f1,color:#312e81
+    style SL fill:#f3e8ff,stroke:#a855f7,color:#581c87
+    style Matrix fill:#fef2f2,stroke:#ef4444,color:#7f1d1d
+    style Compare fill:#f8fafc,stroke:#94a3b8,color:#334155
+    style F1 fill:#fff1f2,stroke:#fda4af,color:#881337
+    style F2 fill:#fff1f2,stroke:#fda4af,color:#881337
+    style F3 fill:#fff1f2,stroke:#fda4af,color:#881337
+    style F4 fill:#fff1f2,stroke:#fda4af,color:#881337
+    style F5 fill:#fff1f2,stroke:#fda4af,color:#881337
+    style OLD fill:#fef3c7,stroke:#f59e0b,color:#78350f
+    style NEW fill:#d1fae5,stroke:#10b981,color:#064e3b

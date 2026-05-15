@@ -1,0 +1,44 @@
+{
+  "conversation_id": "2550b6b5-e042-49d5-91a9-f671db225984",
+  "delegate_registrations": [
+    "module_worker__led_chaser",
+    "module_repair__led_chaser"
+  ],
+  "focus_module_id": "led_chaser",
+  "manual_command_policy": {
+    "manual_executor_command": "Manual reproduction only. Runtime dispatch uses executor_kind plus executor_inputs.",
+    "manual_integration_command": "Manual integration reproduction only. Runtime dispatch uses executor_kind=run_integration plus executor_inputs.",
+    "manual_receipt_command": "Manual repair receipt reproduction only. Runtime dispatch uses preflight_record_repair_edit."
+  },
+  "paths": {
+    "base_state": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/base_state.json",
+    "batch_history": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/batch_history.json",
+    "batch_plan": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/batch_plan.json",
+    "brief_generation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/brief_generation_summary.json",
+    "current_batch_snapshot": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/current_batch_snapshot.json",
+    "delegate_fallbacks": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/delegate_fallbacks.json",
+    "delegate_plan": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/delegate_plan.json",
+    "delegate_requests_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/delegate_requests",
+    "delegate_results": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/delegate_results.json",
+    "deterministic_execution": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/deterministic_execution.json",
+    "events_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/events",
+    "final_acceptance_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/final_acceptance_summary.json",
+    "finalizer_input": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/finalizer_input.json",
+    "fragility_memory": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/fragility_memory.json",
+    "generation_plan": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/generation_plan.json",
+    "generation_results_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/generation_results",
+    "hooks_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/hooks",
+    "integration_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration_summary.json",
+    "module_results_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/module_results",
+    "plan_dag": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/plan_dag.json",
+    "promotion_events": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promotion_events.json",
+    "promotion_failures": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promotion_failures.json",
+    "report_tree": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/report_tree.json",
+    "session_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/session_summary.json",
+    "spec_ir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/spec_ir.json",
+    "state_trace": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/state_trace.json",
+    "workflow_gate": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workflow_gate.json"
+  },
+  "root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984",
+  "state_trace_entries": 9
+}

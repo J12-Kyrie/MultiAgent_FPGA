@@ -1,0 +1,308 @@
+\section{第二章
+相关技术与理论基础}\label{ux7b2cux4e8cux7ae0-ux76f8ux5173ux6280ux672fux4e0eux7406ux8bbaux57faux7840}
+
+\subsection{2.1
+大语言模型与代码生成}\label{ux5927ux8bedux8a00ux6a21ux578bux4e0eux4ee3ux7801ux751fux6210}
+
+\subsubsection{2.1.1 Transformer
+架构与自注意力机制}\label{transformer-ux67b6ux6784ux4e0eux81eaux6ce8ux610fux529bux673aux5236}
+
+现代大语言模型的基础架构是 Transformer，由 Vaswani 等人于 2017
+年提出{[}15{]}。Transformer
+的核心组件是自注意力机制（Self-Attention），其基本思想是：对于输入序列中的每一个
+token，通过计算其与序列中所有其他 token
+的相关性权重，加权聚合上下文信息，从而捕捉序列内部的长程依赖关系。
+
+形式上，给定输入矩阵 \(X\)，自注意力计算如下：
+
+\[\text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}}\right)V\]
+
+其中 \(Q\)、\(K\)、\(V\)
+分别为查询（Query）、键（Key）、值（Value）矩阵，\(d_k\)
+为键向量的维度，用于缩放防止内积过大导致梯度消失。多头注意力（Multi-Head
+Attention）通过并行运行多组注意力头捕获不同子空间的特征，再将各头输出拼接投影，使模型能够同时关注不同粒度的语义关联。
+
+在代码生成任务中，Transformer
+的自注意力机制使模型能够捕获代码的长程依赖------例如模块声明与其后续调用之间的关联、变量定义与使用之间的绑定关系------这是传统
+RNN 架构因梯度消失问题难以实现的能力。
+
+\subsubsection{2.1.2 DeepSeek 模型与双 Profile
+策略}\label{deepseek-ux6a21ux578bux4e0eux53cc-profile-ux7b56ux7565}
+
+本文框架采用 DeepSeek 官方 API（\texttt{deepseek-chat} 模型）作为唯一
+LLM 后端{[}16{]}。DeepSeek-V3 是 DeepSeek
+发布的混合专家架构（Mixture-of-Experts，MoE）大语言模型，其代码生成能力在多项主流基准测试中达到领先水平，同时支持工具调用（function
+calling）接口，满足多智能体框架对结构化输出的要求。
+
+本文的关键技术选择之一是将 \texttt{deepseek-chat} 配置为两种差异化的逻辑
+Profile，通过 \texttt{reasoning\_effort} 参数控制模型的推理深度：
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{thinking
+  Profile}（\texttt{reasoning\_effort=\textquotesingle{}medium\textquotesingle{}}）：启用模型的扩展推理能力，适合需要跨模块推理、架构决策和复杂上下文整合的编排器任务。该模式下模型会在生成最终回答前进行更长时间的内部推理，提升输出的逻辑一致性。
+\item
+  \textbf{fast
+  Profile}（\texttt{reasoning\_effort=\textquotesingle{}none\textquotesingle{}}）：禁用扩展推理，追求最大吞吐量，适合单模块范围内的代码生成、格式化输出和执行器调用等局部性任务。
+\end{itemize}
+
+这种双 Profile
+策略的设计依据是：编排器需要整合多模块上下文、做出分支决策并检测跨模块错误，这类任务受益于更深的推理能力；而模块工作者的任务边界清晰、上下文局部，使用
+fast Profile 既能满足功能需求，又能降低 API 调用延迟和成本。
+
+\subsubsection{2.1.3 LLM 生成 RTL
+的能力边界}\label{llm-ux751fux6210-rtl-ux7684ux80fdux529bux8fb9ux754c}
+
+实践表明，LLM 在单模块 RTL
+生成方面已具备基本可用的能力：对于功能描述清晰、接口规范明确的模块，现代
+LLM 可以生成语法正确、逻辑基本符合预期的 Verilog
+代码。然而，在多模块协同设计场景中，LLM
+面临的核心挑战包括：跨模块接口一致性难以保证、生成代码中存在幻觉端口和信号、无法自主完成编译-仿真-修复的闭环迭代。因此，本文框架的设计策略是将
+LLM
+的任务范围严格限制在单模块粒度，通过框架层面的约束工程解决多模块协同问题。这一策略适用于任何可分解为
+DAG 结构的多模块硬件设计，不局限于特定设计对象。
+
+\subsection{2.2
+多智能体系统理论}\label{ux591aux667aux80fdux4f53ux7cfbux7edfux7406ux8bba}
+
+\subsubsection{2.2.1
+多智能体系统基本概念}\label{ux591aux667aux80fdux4f53ux7cfbux7edfux57faux672cux6982ux5ff5}
+
+多智能体系统（Multi-Agent
+System，MAS）是由多个具有自主决策能力的智能体（Agent）在共享环境中交互协作以完成目标的计算系统{[}17{]}。每个
+Agent
+遵循''感知-决策-执行''的基本循环：感知来自环境的观测信息（Observation），基于自身目标和知识做出决策（Decision），并执行相应动作（Action）以改变环境状态。
+
+在以 LLM 为核心的 MAS 中，Agent
+的感知输入是结构化的提示词（包含系统指令、上下文信息和工具描述），决策表现为
+LLM 的生成输出（工具调用指令或自然语言推理），执行则通过工具调用（Tool
+Use）与外部系统交互。多个 Agent 之间通过消息传递（Message
+Passing）机制协调任务分工，共享工作区文件系统作为持久化通信通道。
+
+\subsubsection{2.2.2
+多智能体协作模式分类}\label{ux591aux667aux80fdux4f53ux534fux4f5cux6a21ux5f0fux5206ux7c7b}
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={图2-1: SDK Agent层级结构}]{../fpga_flow/diagrams/05_sdk_agent_hierarchy.png}}
+\caption{图2-1: SDK Agent层级结构}
+\end{figure}
+
+根据 Agent 之间的交互拓扑和控制机制，多智能体协作模式主要可以分为三类：
+
+\textbf{线性 Pipeline 模式}：Agent 按固定顺序形成处理链，前一个 Agent
+的输出作为下一个 Agent
+的输入，形成线性数据流。同校前序工作中基于AutoGen的线性pipeline方案采用的
+AutoGen ConversableAgent
+六步链式调用即属于此类。该模式结构简单、易于实现，但存在明显局限：无法处理非线性依赖、不支持并行执行、任意一环的失败会导致整条链路中断，且缺乏对回退和重试的系统性支持。
+
+\textbf{层级委派模式}（Orchestrator-Worker）：一个高层编排器（Orchestrator）负责任务分解、进度跟踪和分支决策，将具体执行子任务委派给专业化的工作者
+Agent（Worker）。Worker
+在自己的受限上下文中完成局部任务并汇报结果，编排器根据结果决定后续流程。本文框架采用此模式，其优势在于分层的职责分离、对复杂依赖关系的自然表达，以及对失败节点的局部隔离和修复。
+
+\textbf{动态协商模式}：Agent
+之间通过辩论（Debate）、反思（Reflection）或 ReAct
+循环等机制动态协商达成共识，适合需要多视角验证的任务，但通信开销较大，不适合本文场景。
+
+本文框架在层级委派模式基础上引入了编排状态机，进一步将编排逻辑从 LLM
+的''自由决策''中抽离出来，由框架代码精确控制状态转移，实现了
+Framework-controlled 的架构范式，有别于 AutoGen 等框架中常见的
+Prompt-controlled 模式。
+
+\subsubsection{2.2.3 OpenHands SDK 的 Agent-Conversation-Tool
+抽象}\label{openhands-sdk-ux7684-agent-conversation-tool-ux62bdux8c61}
+
+OpenHands SDK 提供了构建 LLM 多智能体应用的核心抽象层：Agent
+定义了具有特定角色、工具集和系统提示的智能体实例；Conversation
+封装了一次 Agent 的完整对话会话，管理消息历史与上下文压缩；Tool 表示
+Agent
+可以调用的外部能力接口，包括文件读写、代码执行和自定义函数等。本文框架在此抽象层之上构建了角色化的
+Agent 工厂、会话驱动器和门控回调机制，将 SDK
+的通用能力适配为面向多模块硬件设计自动化的工作流编排引擎。
+
+\subsection{2.3 FPGA
+设计与验证基础}\label{fpga-ux8bbeux8ba1ux4e0eux9a8cux8bc1ux57faux7840}
+
+\subsubsection{2.3.1 FPGA
+设计流程概述}\label{fpga-ux8bbeux8ba1ux6d41ux7a0bux6982ux8ff0}
+
+FPGA 的完整设计流程从行为级规格描述出发，依次经过以下阶段{[}4{]}：
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  \textbf{RTL 编码}：使用 Verilog 或 VHDL
+  等硬件描述语言编写寄存器传输级描述，定义数据通路和控制逻辑；
+\item
+  \textbf{功能仿真}：在综合之前对 RTL
+  代码进行行为级仿真，验证逻辑功能的正确性；
+\item
+  \textbf{逻辑综合}：将 RTL
+  代码映射为目标器件的逻辑原语（LUT、触发器等），生成网表；
+\item
+  \textbf{布局布线}：将逻辑网表映射到器件的物理资源，完成时序优化；
+\item
+  \textbf{比特流生成与烧写}：生成器件配置文件并下载到 FPGA 目标板。
+\end{enumerate}
+
+本文框架专注于 RTL
+编码与功能仿真（L0--L2）及集成回归测试阶段，不涉及综合及后续的物理实现流程（L3
+阶段）。
+
+在 Verilog HDL 中，硬件模块通过 \texttt{module} 关键字定义，端口通过
+\texttt{input}/\texttt{output}/\texttt{inout} 声明，信号通过
+\texttt{wire}（组合逻辑）和 \texttt{reg}（时序逻辑或 \texttt{always}
+块赋值）声明，时序行为通过 \texttt{always\ @(posedge\ clk)}
+敏感列表描述，组合逻辑通过 \texttt{always\ @*} 或 \texttt{assign} 描述。
+
+\subsubsection{2.3.2 Verilator 仿真器原理与 MCP
+集成}\label{verilator-ux4effux771fux5668ux539fux7406ux4e0e-mcp-ux96c6ux6210}
+
+本文框架采用 Verilator 作为仿真引擎{[}18{]}。与 Vivado xsim
+等商业仿真器不同，Verilator 是一款开源的高性能 Verilog
+仿真工具，其工作原理是将 Verilog RTL 代码编译为 C++ 或 SystemC
+模型，再将用户编写的 C++ testbench
+与生成的模型链接并编译为可执行文件，最后运行该可执行文件完成仿真。
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={图2-2: 执行器调度流程}]{../fpga_flow/diagrams/08_executor_dispatch.png}}
+\caption{图2-2: 执行器调度流程}
+\end{figure}
+
+这种''编译后执行''的架构使 Verilator
+在执行速度上显著优于基于解释器的仿真方案，且无需商业许可证，适合在自动化流水线中频繁调用。
+
+在本文框架中，Agent 与 Verilator 之间通过 Model Context
+Protocol（MCP）进行通信。MCP 是一种标准化的 AI Agent
+与外部工具交互协议，通过 stdio 管道在 Agent 侧（Python
+SDK）与工具服务端（Node.js 实现的 verilator-mcp
+服务器）之间传递结构化的调用请求与响应。这种架构使 Agent
+只需通过标准化接口调用 \texttt{verilator\_compile} 和
+\texttt{verilator\_simulate} 工具，无需了解 Verilator
+的命令行细节，同时框架可以通过工具过滤机制控制 Agent 的工具访问权限。
+
+\subsubsection{2.3.3 C++ Testbench 与 Checkpoint
+协议}\label{c-testbench-ux4e0e-checkpoint-ux534fux8bae}
+
+本文框架的所有 testbench 均采用 C++ 编写（\texttt{.cpp} 文件），通过
+Verilator 生成的仿真类直接操作设计的输入输出端口。Testbench
+在验证关键行为节点时，通过调用 \texttt{emit\_checkpoint()}
+函数向标准输出发射结构化标记，格式为
+\texttt{CHECKPOINT\textbar{}\textless{}name\textgreater{}\textbar{}PASS\textbar{}\textless{}detail\textgreater{}}，由框架的
+\texttt{CheckpointParser}
+组件自动解析并汇总为验证结论。这种机制将验证结果的判定完全自动化，无需人工判读波形或日志。
+
+\subsection{2.4 AES-128
+加密算法}\label{aes-128-ux52a0ux5bc6ux7b97ux6cd5}
+
+本节介绍作为框架验证案例的 AES-128 加密算法背景。选择 AES-128
+作为验证案例的原因将在 2.4.4 节详述。
+
+\subsubsection{2.4.1 FIPS-197
+标准概述}\label{fips-197-ux6807ux51c6ux6982ux8ff0}
+
+高级加密标准（Advanced Encryption
+Standard，AES）由美国国家标准与技术研究所（NIST）于 2001
+年发布，对应标准文件为 FIPS PUB 197{[}19{]}。AES
+是一种对称分组密码，支持 128 位、192 位和 256
+位三种密钥长度，对应分别进行 10、12、14 轮迭代变换。本文框架专注于
+AES-128，即使用 128 位密钥、执行 10 轮变换的配置。
+
+AES 的操作对象是一个 4×4 字节的二维状态矩阵（State），每个元素为
+GF(2\^{}8)
+上的一个字节值。加密过程以明文块和初始密钥为输入，经过若干轮变换后输出密文块，全程在该状态矩阵上进行原地更新。
+
+\subsubsection{2.4.2 AES-128
+加密的四步变换}\label{aes-128-ux52a0ux5bc6ux7684ux56dbux6b65ux53d8ux6362}
+
+{[}图2-3: AES-128加密流程图（10轮迭代，标注每轮4步变换）{]}
+
+AES-128 的每轮加密由以下四步变换依次组成：
+
+\textbf{SubBytes（字节替换）}：对状态矩阵中的每个字节独立施加一个非线性的字节替换，替换规则由一张
+256 项的 S-box 查找表定义。S-box 的构造基于 GF(2\^{}8)
+上的乘法逆元运算加上一个仿射变换，保证了良好的非线性性（抗差分攻击和线性攻击特性）。S-box
+的输入输出关系固定不变，与密钥无关，可以预先存储为 ROM 或
+LUT。在硬件实现中，\texttt{aes\_sbox}
+模块承担该变换，接收单字节输入，输出经过 S-box 替换后的单字节结果。
+
+\textbf{ShiftRows（行移位）}：对状态矩阵的四行分别循环左移不同的字节数：第
+0 行不移位，第 1 行左移 1 字节，第 2 行左移 2 字节，第 3 行左移 3
+字节。该变换在字节级别引入行间的交错，增加了密文的扩散性，防止各列之间的相互独立性被利用。
+
+\textbf{MixColumns（列混合）}：对状态矩阵的每一列独立施加一个线性变换。每列被视为
+GF(2\^{}8) 上的一个四元组，与一个固定的 4×4 矩阵做矩阵乘法。GF(2\^{}8)
+上的乘法可以通过有限域多项式运算实现，在硬件中通常展开为异或和按条件移位的组合逻辑。MixColumns
+与 ShiftRows 共同构成 AES
+的扩散机制，确保输入差异在多轮变换后扩散至所有状态字节。最后一轮（第 10
+轮）不执行 MixColumns，这是 AES 标准规定以保证加解密结构对称性的设计。
+
+\textbf{AddRoundKey（轮密钥加）}：将当前轮的 128
+位轮密钥与状态矩阵逐字节做异或（XOR）运算。该步骤是唯一涉及密钥的变换，负责将密钥信息注入加密状态。在加密开始之前，还有一次独立的
+AddRoundKey（第 0 轮，使用原始密钥），随后再进行 10
+轮迭代，每轮使用不同的子密钥。
+
+\subsubsection{2.4.3
+密钥扩展算法}\label{ux5bc6ux94a5ux6269ux5c55ux7b97ux6cd5}
+
+AES-128 的 10 轮迭代共需要 11 个 128
+位轮密钥（含初始密钥）。密钥扩展算法（Key Schedule）从原始 128
+位密钥出发，按照以下规则逐列生成后续密钥：
+
+对于每个新密钥列 \(W[i]\)（\(i \geq 4\)）： - 若 \(i\) 为 4
+的倍数：\(W[i] = W[i-4] \oplus \text{SubWord}(\text{RotWord}(W[i-1])) \oplus \text{RCON}[i/4]\)
+- 否则：\(W[i] = W[i-4] \oplus W[i-1]\)
+
+其中 \texttt{RotWord} 对四字节字执行循环左移一位，\texttt{SubWord}
+对每个字节执行 S-box 替换（复用 \texttt{aes\_sbox} 模块），\texttt{RCON}
+为轮常数数组（基于 GF(2\^{}8) 上 2
+的幂次方）。\texttt{aes\_key\_schedule\_128} 模块以 128
+位原始密钥为输入，以组合逻辑方式输出全部 11 个轮密钥，各占 128 位。
+
+\subsubsection{2.4.4
+本文采用的迭代微架构}\label{ux672cux6587ux91c7ux7528ux7684ux8fedux4ee3ux5faeux67b6ux6784}
+
+\begin{figure}
+\centering
+\pandocbounded{\includegraphics[keepaspectratio,alt={图2-4: 编排器状态机}]{../fpga_flow/diagrams/14_orchestrator_states.png}}
+\caption{图2-4: 编排器状态机}
+\end{figure}
+
+在硬件实现策略上，AES-128 存在多种微架构选择：全展开架构（将 10
+轮逻辑全部并行实例化）具有最高吞吐量但面积开销极大；流水线架构在吞吐量与面积之间取得平衡；迭代架构（每周期执行一轮变换，复用同一套轮变换逻辑）面积最小但延迟较高。
+
+本文框架采用单轮迭代架构，顶层模块 \texttt{aes128\_encrypt\_core}
+实现一个三状态有限状态机（FSM）：
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{IDLE 状态}：等待 \texttt{start}
+  信号有效，此时接收明文与密钥输入，并完成第 0 轮 AddRoundKey；
+\item
+  \textbf{ROUND 状态}：每时钟周期执行一轮完整的
+  SubBytes+ShiftRows+MixColumns+AddRoundKey 变换，循环计数 10 轮；
+\item
+  \textbf{DONE 状态}：第 10 轮完成后（省略 MixColumns），拉高
+  \texttt{done} 信号一个时钟周期，输出最终密文，随后回归 IDLE。
+\end{itemize}
+
+该架构的端到端延迟为 11 个时钟周期（初始 AddRoundKey 1 拍加 10 轮迭代各
+1 拍），\texttt{done} 信号为单周期脉冲，与
+\texttt{aes128\_encrypt\_core} 的 testbench 中 \texttt{CHK\_DONE\_PULSE}
+checkpoint
+验证项相对应。这一设计在面积、功耗和实现复杂度之间取得了合理平衡，也为自动化验证提供了清晰的行为契约（behavioral
+contract）。
+
+选择 AES-128
+作为本文通用框架的验证案例，有以下几点重要原因：其一，FIPS-197
+标准对加密行为有精确的形式化定义，提供了大量可直接使用的已知答案测试（KAT）向量，便于验证框架的
+Checkpoint 协议和分层验证体系；其二，四模块 DAG 结构（sbox
+被多个模块依赖）为验证框架的 DAG
+拓扑批调度和多模块协同设计能力提供了典型场景；其三，AES
+硬件实现规模适中，在本科论文的工程体量范围内可以完整覆盖框架的全部验证层级（L0→L1→L2→Integration）；其四，AES
+在实际产品中的广泛应用赋予了验证案例较强的实用价值。综上，AES-128
+是检验通用多智能体硬件设计自动化框架各项能力的理想案例。

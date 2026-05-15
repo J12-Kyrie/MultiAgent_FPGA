@@ -1,0 +1,18 @@
+{
+  "checkpoint_summary": {},
+  "error": {
+    "message": "{\n  \"meta\": null,\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"Error: Compilation failed: Exiting due to 1 warning(s)\",\n      \"annotations\": null,\n      \"meta\": null\n    }\n  ],\n  \"structuredContent\": null,\n  \"isError\": true\n}",
+    "type": "RuntimeError"
+  },
+  "failed_checkpoints": [],
+  "l0_status": "failed",
+  "l1_status": "failed",
+  "missing_checkpoints": [
+    "CHK_ROUND_STATE_MATCH"
+  ],
+  "module_id": "aes_round_transform",
+  "promoted_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../promoted",
+  "validation_status": "failed",
+  "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform",
+  "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/.../workspaces/aes_round_transform/workspace_state.json"
+}

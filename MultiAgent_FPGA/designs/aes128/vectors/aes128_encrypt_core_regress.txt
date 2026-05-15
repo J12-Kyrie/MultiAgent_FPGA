@@ -1,0 +1,5 @@
+# AES-128 regression vector from the NIST SP 800-38A corpus
+key=2b7e151628aed2a6abf7158809cf4f3c
+plaintext=6bc1bee22e409f96e93d7e117393172a
+ciphertext=3ad77bb40d7a3660a89ecaf32466ef97
+latency_cycles=11

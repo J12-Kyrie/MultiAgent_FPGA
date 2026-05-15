@@ -1,0 +1,64 @@
+flowchart TB
+    subgraph Row["三大核心创新点"]
+        direction LR
+
+        subgraph I1["创新点一：框架控制的编排状态机"]
+            direction TB
+            SM["10 状态编排状态机\nSPEC_INTAKE → ARCHITECTING → PLANNING\n→ MODULE_DESIGN → L0 → L1 → L2\n→ INTEG_READY → INTEG_REGRESSION → DONE"]
+            POL["AgentExecutionPolicy\n🧠 THINKING — 规格 / 架构 / 集成\n⚡ FAST — 模块设计 / 验证 / L2"]
+            SUB["子代理策略\n🚫 FORBIDDEN · 👷 WORKER · 🎯 L2"]
+            CTRL["框架控制 ✅\n状态机拥有控制权\nBatch Gate 文件系统门控\n有限修复预算 + 升级策略\n————————\nPrompt 控制 ❌\n提前宣告成功 · 无限循环"]
+            SM --> POL --> SUB --> CTRL
+        end
+
+        subgraph I2["创新点二：四层分级验证 + Checkpoint"]
+            direction TB
+            VL["四层分级验证体系"]
+            V0["⚡ L0 编译门控 — 秒级"]
+            V1["🔍 L1 仿真验证 — KAT 向量"]
+            V2["🎲 L2 鲁棒性 — 随机/边界向量"]
+            VI["🔗 Integration — 3 Campaign\nbaseline · back_to_back · mid_reset"]
+            CK["Checkpoint 协议\nTB: emit_checkpoint(name, detail)\nLog: CHECKPOINT|name|PASS|detail\n框架: CheckpointParser 自动判定\nmissing=0 ∧ failed=0 → VALIDATED"]
+            VL --> V0 -->|"PASS"| V1 -->|"ALL CHK"| V2 -->|"PROMOTED"| VI --> CK
+        end
+
+        subgraph I3["创新点三：Harnessing Engine 约束引擎"]
+            direction TB
+            HE["六层 LLM 约束架构"]
+            H1["① Skill — 16 个领域知识文件"]
+            H2["② Prompt — 5 BaseContract + N PhaseMixin"]
+            H3["③ Memory — 参考代码预填充 · 任务降级"]
+            H4["④ Hooks — run_executor · SHA-256 验证"]
+            H5["⑤ MCP — 工具白名单 · 隔离危险入口"]
+            H6["⑥ SlashCommand — 9 CLI 命令 · dry-run"]
+            DEF["覆盖 5 种 LLM 失败模式\n幻觉端口 · 语法错误\nScope Drift · 过度修改 · 格式错误\n————————\nvs AutoGen: 1 层 → 6 层深度防御"]
+            HE --> H1 --> H2 --> H3 --> H4 --> H5 --> H6 --> DEF
+        end
+    end
+
+    I1 --->|"状态机驱动\n验证层级切换"| I2
+    I2 --->|"验证+修复循环\n需要约束保障"| I3
+    I3 --->|"约束 Agent 行为\n保证状态机可靠"| I1
+
+    style Row fill:#fff,stroke:#94a3b8,color:#1e293b
+    style I1 fill:#eff6ff,stroke:#3b82f6,color:#1e3a5f
+    style I2 fill:#f0fdf4,stroke:#22c55e,color:#14532d
+    style I3 fill:#fefce8,stroke:#eab308,color:#713f12
+    style SM fill:#dbeafe,stroke:#93c5fd,color:#1e3a5f
+    style POL fill:#e0f2fe,stroke:#38bdf8,color:#0c4a6e
+    style SUB fill:#bae6fd,stroke:#0ea5e9,color:#0c4a6e
+    style CTRL fill:#f0f9ff,stroke:#7dd3fc,color:#075985
+    style VL fill:#bbf7d0,stroke:#22c55e,color:#14532d
+    style V0 fill:#dcfce7,stroke:#86efac,color:#14532d
+    style V1 fill:#dcfce7,stroke:#86efac,color:#14532d
+    style V2 fill:#dcfce7,stroke:#86efac,color:#14532d
+    style VI fill:#dcfce7,stroke:#86efac,color:#14532d
+    style CK fill:#d1fae5,stroke:#34d399,color:#064e3b
+    style HE fill:#fef9c3,stroke:#facc15,color:#713f12
+    style H1 fill:#fef9c3,stroke:#fde047,color:#713f12
+    style H2 fill:#fef9c3,stroke:#fde047,color:#713f12
+    style H3 fill:#fef9c3,stroke:#fde047,color:#713f12
+    style H4 fill:#fef9c3,stroke:#fde047,color:#713f12
+    style H5 fill:#fef9c3,stroke:#fde047,color:#713f12
+    style H6 fill:#fef9c3,stroke:#fde047,color:#713f12
+    style DEF fill:#fef2f2,stroke:#ef4444,color:#7f1d1d

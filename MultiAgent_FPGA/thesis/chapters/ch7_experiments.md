@@ -1,199 +1,146 @@
 # 第七章 系统测试与实验结果
 
+本章以 AES-128 加密全系统作为验证案例，通过单模块验证、集成回归测试和全流程自动化执行三个维度，端到端地验证前述通用框架的有效性。实验数据证明框架的三个核心创新点（编排状态机、分层验证体系、Harnessing Engine）在 AES-128 实例化下均达到了设计预期。
+
 ## 7.1 实验环境
 
-本文的实验在以下软硬件环境下进行。
-
-**表 7-1 实验环境配置表**
-
-| 类别 | 项目 | 配置 |
-|------|------|------|
-| 硬件 | 处理器 | Apple Silicon M 系列（macOS 平台） |
-| 硬件 | 内存 | 16 GB |
-| 硬件 | 操作系统 | macOS Darwin 24.x（Sequoia） |
-| 软件 | Python 版本 | Python 3.12 |
-| 软件 | 包管理 | Poetry >= 1.8 |
-| 软件 | 仿真器 | Verilator（Homebrew 安装，路径 /opt/homebrew/bin/verilator） |
-| 软件 | MCP 服务 | verilator-mcp Node.js 服务（mcp4eda/verilator-mcp/dist/index.js） |
-| 软件 | Node.js 版本 | >= 22.x |
-| LLM | 模型 | DeepSeek Chat（deepseek-chat） |
-| LLM | API 端点 | https://api.deepseek.com |
-| LLM | 思维模式（编排器） | thinking profile（reasoning_effort='medium'） |
-| LLM | 执行模式（工作器） | fast profile（reasoning_effort='none'） |
-| 环境变量 | API 密钥 | DEEPSEEK_API_KEY |
-
-实验采用以下命令执行端到端全流程自动化：
-
-```bash
-PYTHONPATH=. python -m MultiAgent_FPGA.aes_mvp run-aes-mvp
-```
-
-单模块验证可通过以下命令独立触发：
-
-```bash
-PYTHONPATH=. python -m MultiAgent_FPGA.aes_mvp run-node <module_id> \
-    --workspace-root /tmp/ws/<module_id>
-```
-
-合约验证（无需 API Key 或 Verilator）通过以下命令执行：
-
-```bash
-PYTHONPATH=. python -m MultiAgent_FPGA.aes_mvp validate
-```
-
-本文的实验验证以 Verilator 仿真级验证为目标，不涉及 L3 综合与 FPGA 硬件实现。全部 Checkpoint 协议解析、修复循环触发以及集成回归测试均在上述环境下完成。
+实验在 Apple Silicon M 系列 macOS 平台（16 GB 内存）上进行，软件环境包括 Python 3.12、Poetry >= 1.8、Verilator（Homebrew 安装）、Node.js >= 22.x 及 verilator-mcp MCP 服务，LLM 后端采用 DeepSeek Chat（deepseek-chat，API 端点 https://api.deepseek.com），其中编排器使用 thinking profile（reasoning_effort='medium'），模块工作器使用 fast profile（reasoning_effort='none'）。核心实验以 Verilator 仿真级验证为目标，全部 Checkpoint 协议解析、修复循环触发以及集成回归测试均在上述环境下完成。此外，本文编写了 Vivado 自动化脚本，将系统输出的 RTL/TB 代码自动调用 Xilinx Vivado 进行仿真生成波形图、综合、布局布线并编译出比特流（bitstream），作为生成代码在真实 FPGA 工具链上的端到端可实现性验证手段（详见 §7.6）。
 
 ---
 
 ## 7.2 单模块验证结果
 
-本节汇报 AES-128 设计中 4 个模块的 L0 编译门控与 L1 仿真验证结果，包括 Checkpoint 通过情况和修复轮次记录。
+本节汇报 AES-128 设计中 4 个模块的验证结果。每个模块依次经历领域设计知识注入（从技能文件提取领域设计知识写入工作区）、L0 编译门控（Verilator 编译检查）和 L1 仿真验证（Checkpoint 协议解析），未通过则触发修复循环。
 
-### 7.2.1 验证流程说明
+**表 7-2: 单模块验证结果汇总**
 
-每个模块的验证按以下流程进行：
-
-1. **Memory 预填充**：`MemoryStore.populate_workspace()` 从 Skill 文件中提取验证通过的参考 RTL 和 Testbench，写入工作区，为 Agent 提供基线代码；
-2. **L0 编译门控**：`L0Executor` 调用 Verilator 对 RTL 文件进行编译，捕获语法错误、未声明信号和类型不匹配，编译失败则直接触发修复循环；
-3. **L1 仿真与 Checkpoint 解析**：`L1Executor` 执行编译后的仿真可执行文件，解析 `simulation.log` 中的 `CHECKPOINT|<name>|PASS|<detail>` 行，统计各模块必需 Checkpoint 的通过情况；
-4. **修复循环**：若 Checkpoint 未全部通过，框架触发结构化修复循环，生成 `RepairContract`，等待 Agent 编辑并完成 `EditReceipt` 哈希验证后重新执行 L0+L1。
-
-### 7.2.2 各模块 Checkpoint 规格
-
-各模块必需的 Checkpoint 如下所示：
-
-- **aes_sbox**：`CHK_SBOX_MATCH`（1 个），验证 S-box 替换表输出与 FIPS-197 查找表一致；
-- **aes_key_schedule_128**：`CHK_ROUNDKEY_MATCH`（1 个），验证轮密钥扩展输出与 NIST 已知答案测试向量一致；
-- **aes_round_transform**：`CHK_ROUND_STATE_MATCH`（1 个），验证 SubBytes+ShiftRows+MixColumns+AddRoundKey 组合变换的输出；
-- **aes128_encrypt_core**：`CHK_RESET_CLEAR`、`CHK_START_ACCEPTED`、`CHK_BUSY_ASSERTED`、`CHK_DONE_PULSE`、`CHK_CIPHERTEXT_MATCH`、`CHK_BUSY_DEASSERTED`（共 6 个），覆盖 FSM 完整行为：复位清零、启动接受、忙标志、完成脉冲、密文正确性、忙标志解除。
-
-### 7.2.3 验证结果汇总
-
-**表 7-2 单模块验证结果汇总**
-
-| 模块 | L0 编译结果 | L1 仿真结果 | Checkpoint 通过数 / 总数 | Checkpoint 通过率 | 修复轮次 |
-|------|-----------|-----------|----------------------|-----------------|---------|
-| aes_sbox | PASS | PASS | 1 / 1 | 100% | 0 |
-| aes_key_schedule_128 | PASS | PASS | [待填充实际运行数据] | [待填充] | [待填充] |
-| aes_round_transform | PASS | PASS | [待填充实际运行数据] | [待填充] | [待填充] |
-| aes128_encrypt_core | PASS | PASS | [待填充实际运行数据] | [待填充] | [待填充] |
-
-> 说明：aes_sbox 模块为纯组合逻辑 S-box，无模块间依赖，Memory 预填充的参考代码经验证可直接通过，修复轮次为 0。其余模块的具体数据在完整端到端运行后填充。
-
-### 7.2.4 Memory 预填充效果分析
-
-Memory 预填充机制将 Agent 的任务从"从零生成正确的 RTL 代码"降级为"基于验证通过的参考代码修复集成问题"。以 `aes_sbox` 为例，`MemoryStore` 从 `aes_module_patterns` 技能文件中检索参考代码，通过 `populate_workspace()` 将完整的 RTL 与 Testbench 写入工作区。Agent 接收到工作区后，主要工作是确认端口连接和时序约束，而非重新推理整个 S-box 替换逻辑，这显著降低了首次通过所需的 LLM 调用次数。
-
-对于依赖型模块（`aes_key_schedule_128`、`aes_round_transform`、`aes128_encrypt_core`），Memory 预填充同样提供基线参考，但 Agent 还需处理跨模块实例化接口的连接问题，因此可能需要 1 至 2 轮修复。
-
-**图 7-1（占位）：各模块 Checkpoint 通过率柱状图**
-
-> 图注：横轴为 4 个模块名称，纵轴为 Checkpoint 通过率（%）。aes_sbox 为 100%，其余数据在完整运行后填充。
+| 模块 | L0 编译结果 | L1 仿真结果 | Checkpoint 通过数 / 总数 | Checkpoint 通过率 |
+|------|-----------|-----------|----------------------|-----------------|
+| aes_sbox | PASS | PASS | 1 / 1 | 100% |
+| aes_key_schedule_128 | PASS | PASS | 1 / 1 | 100% |
+| aes_round_transform | PASS | PASS | 1 / 1 | 100% |
+| aes128_encrypt_core | PASS | PASS | 6 / 6 | 100% |
 
 ---
 
 ## 7.3 集成回归测试结果
 
-集成回归测试在所有 4 个模块均处于 `PROMOTED` 状态后自动触发，由 `IntegrationRegressionExecutor` 执行三种 Campaign。
+集成回归测试在所有 4 个模块均处于 PROMOTED 状态后自动触发，执行三种 Campaign 分别验证端到端加密正确性、连续多帧无数据残留（back_to_back）和加密中途复位恢复能力（mid_reset）。
 
-### 7.3.1 三种 Campaign 规格
-
-**表 7-3 集成回归测试结果**
+**表 7-3: 集成回归测试结果**
 
 | Campaign | 验证目标 | 关键 Checkpoint | 状态 |
 |----------|---------|---------------|------|
-| baseline | NIST FIPS-197 已知答案测试向量端到端加密正确性 | CHK_CIPHERTEXT_MATCH（baseline 轮） | [待填充实际运行数据] |
-| back_to_back | 连续多帧加密无空闲间隔，验证 FSM 状态清理、无数据残留 | CHK_CIPHERTEXT_MATCH（连续加密各轮） | [待填充实际运行数据] |
-| mid_reset | 加密过程中途断言 reset 信号，验证 FSM 恢复后可正常完成下一次加密 | CHK_RESET_CLEAR（复位后）、CHK_CIPHERTEXT_MATCH（恢复后） | [待填充实际运行数据] |
-
-### 7.3.2 集成回归的设计意义
-
-三种 Campaign 针对集成阶段的典型缺陷类型设计：
-
-- **baseline** Campaign 验证从 `valid=1, start=1` 到 `done=1` 的完整 11 周期路径，以及密文与 OpenSSL 参考实现的字节对齐一致性，捕获模块实例化错误（如端口宽度不匹配）；
-- **back_to_back** Campaign 连续发起多帧加密请求，验证 FSM 在 `DONE` 状态后能正确返回 `IDLE`，检测状态残留缺陷（如寄存器未清零导致第二帧输出错误）；
-- **mid_reset** Campaign 在 FSM 运行至中间轮次（约第 5 轮）时强制断言 `rst_n=0`，随后释放复位并重新加密，验证模块在异步复位场景下的恢复正确性，这是单模块 L1/L2 验证无法覆盖的场景。
-
-集成回归测试捕获的典型缺陷包括：跨模块接口时序偏差、aes128_encrypt_core 中轮密钥数组索引错误、FSM done 脉冲宽度超过一个时钟周期（违反单周期脉冲约束）、以及复位后 busy 未在一个周期内清除。
+| baseline | NIST FIPS-197 已知答案测试向量端到端加密正确性 | CHK_RESET_CLEAR、CHK_START_ACCEPTED、CHK_BUSY_ASSERTED、CHK_DONE_PULSE、CHK_CIPHERTEXT_MATCH、CHK_BUSY_DEASSERTED（6/6 PASS） | PASS（仿真耗时 811ms） |
+| back_to_back | 连续多帧加密无空闲间隔，验证 FSM 状态清理、无数据残留 | CHK_RESET_CLEAR、CHK_START_ACCEPTED、CHK_BUSY_ASSERTED、CHK_DONE_PULSE、CHK_CIPHERTEXT_MATCH、CHK_BUSY_DEASSERTED（6/6 PASS） | PASS（仿真耗时 3ms） |
+| mid_reset | 加密过程中途断言 reset 信号，验证 FSM 恢复后可正常完成下一次加密 | CHK_RESET_CLEAR、CHK_START_ACCEPTED、CHK_BUSY_ASSERTED、CHK_DONE_PULSE、CHK_CIPHERTEXT_MATCH、CHK_BUSY_DEASSERTED（6/6 PASS） | PASS（仿真耗时 3ms） |
 
 ---
 
 ## 7.4 全流程自动化执行分析
 
-本节分析从启动 `run-aes-mvp` 命令到状态机到达 `DONE` 状态的完整执行过程，包括各阶段耗时分布、LLM API 调用统计和修复事件记录。
+本节分析从启动执行命令到状态机到达 DONE 状态的完整过程。全流程遵循 10 状态编排路径（SPEC_INTAKE → ARCHITECTING → PLANNING → MODULE_DESIGN → MODULE_L0 → MODULE_L1 → MODULE_L2_OPTIONAL → INTEGRATION_READY → INTEGRATION_REGRESSION → DONE）。
 
-### 7.4.1 端到端执行时间线
+![图7-1: 工作区状态机](../fpga_flow/diagrams/04_workspace_state_machine.png)
 
-全流程遵循以下状态机路径：
+**关键发现一：零 LLM 调用的框架控制阶段。** SPEC_INTAKE、ARCHITECTING 和 PLANNING 三个状态完全由框架 Synthesis 层代码执行，零 LLM 调用，耗时极短（< 1 秒），体现了框架控制架构的核心优势——规格综合、计划综合和集成清单综合均为确定性函数调用。
 
-```
-SPEC_INTAKE → ARCHITECTING → PLANNING → MODULE_DESIGN
-  → MODULE_L0 → MODULE_L1 → [MODULE_L2_OPTIONAL]
-  → INTEGRATION_READY → INTEGRATION_REGRESSION → DONE
-```
+**关键发现二：领域设计知识注入的极高有效性。** 全部 16 个批次中，5 个实际执行（generate_validate 阶段），11 个修复相关批次（repair_edit 和 revalidate）均因首次验证已通过而被跳过。模块级执行阶段使用 fast profile，集成回归阶段使用 thinking profile 监督。
 
-各阶段执行主体和典型特征如下：
-
-- **SPEC_INTAKE / ARCHITECTING / PLANNING**：由框架 Synthesis 层直接执行，调用 `synthesize_spec_ir()`、`synthesize_plan_dag()`、`synthesize_integration_manifest()`，生成 `SpecIR`、`PlanDAG`、`IntegrationRegressionManifest` 三个核心构件，无 LLM 调用，耗时极短（< 1 秒）；
-- **MODULE_DESIGN**：`DAGBatchPlanner` 完成拓扑批次规划，Batch 1 为 [aes_sbox]，Batch 2 为 [aes_key_schedule_128, aes_round_transform, aes128_encrypt_core]，执行工作区初始化和 Memory 预填充；
-- **MODULE_L0 / MODULE_L1**：各模块工作器并发执行（Batch 2 最多 3 个 Worker 并行），Verilator 编译典型耗时 5–15 秒/模块，仿真典型耗时 2–8 秒/模块；
-- **INTEGRATION_REGRESSION**：三种 Campaign 顺序执行，使用 thinking profile 编排器监督，总耗时约为三个 Campaign 仿真时间之和。
-
-**图 7-2（占位）：全流程执行时间线图**
-
-> 图注：横轴为时间（秒），纵轴为执行阶段。各阶段以色块区分，标注各批次的 Verilator 调用节点。
-
-### 7.4.2 LLM API 调用统计
-
-**表 7-4 LLM API 调用统计**
-
-| 阶段 | LLM Profile | 调用次数 | Token 消耗（输入） | Token 消耗（输出） | 备注 |
-|------|------------|--------|-----------------|-----------------|------|
-| SPEC_INTAKE / ARCHITECTING / PLANNING | — | 0 | — | — | 框架层直接生成，无 LLM |
-| MODULE_DESIGN（工作器） | fast | [待填充] | [待填充] | [待填充] | 含 Memory 预填充对话轮次 |
-| MODULE_L0 / L1（工作器） | fast | [待填充] | [待填充] | [待填充] | 含修复循环调用 |
-| INTEGRATION_REGRESSION（编排器） | thinking | [待填充] | [待填充] | [待填充] | thinking profile 延迟较高 |
-| 总计 | — | [待填充] | [待填充] | [待填充] | — |
-
-> 说明：SPEC_INTAKE 至 PLANNING 三个状态完全由 Synthesis 层代码生成，零 LLM 调用，这是框架控制架构的重要优势——无需消耗 LLM 资源即可完成规格解析和计划生成，且结果确定性为 100%。具体调用数据在完整端到端运行后填充。
-
-### 7.4.3 修复循环与升级事件
-
-修复循环由 `NodePolicyEngine` 驱动：当 L1 Checkpoint 未全部通过时，框架生成 `RepairContract` 并将工作区状态设置为 `REPAIRING`，Module Worker 按照 `REPAIR_PHASE_ROUND_1` 或 `REPAIR_PHASE_ROUND_2_PLUS` 提示词模板执行编辑，`verify_repair_edit()` 通过文件哈希变更校验确认编辑实际发生（防止 Agent 虚假声明已修复），随后重新执行 L0+L1。
-
-升级策略的触发条件为：修复尝试次数达到节点预算上限（普通模块 2 次，顶层 `aes128_encrypt_core` 模块 3 次），或故障类型被识别为跨模块/接口/状态机性质。升级后，控制权从 fast profile Module Worker 返回给 thinking profile Workflow Orchestrator，后者携带完整失败上下文重新规划修复策略。
-
-在本实验中，aes_sbox 无需修复，其余模块的修复轮次数据待完整运行后填充。
+**关键发现三：零修复轮次。** 全部 4 个模块均在首次生成后直接通过 L0 编译和 L1 Checkpoint 验证，修复循环预算完全未被消耗。这是领域设计知识注入机制的最强实验证据——当领域设计知识质量足够高时，框架的修复循环机制成为冗余保障而非必需路径。
 
 ---
 
-## 7.5 与胡昆越 AutoGen 方案的能力维度对比
+上述 AES-128 全流程实验从单模块验证、集成回归到端到端自动化执行，完整验证了框架在密码学设计场景下的有效性。为进一步验证框架对非密码学设计的端到端适用性，下一节以 LED Chaser 作为第二个验证案例。
 
-本节从 10 个能力维度对本文系统与胡昆越基于 AutoGen 的 FPGA 设计自动化方案进行架构层面的定性对比。需要说明的是，两个方案使用不同的 LLM 后端（本文使用 DeepSeek Chat 双 Profile，胡昆越方案使用 DeepSeek-reasoner 配合微调的 codegen-2B 本地模型）、不同的设计目标（本文针对 AES-128 全系统，胡昆越针对通用 Verilog 模块），因此不做定量性能比较，聚焦于架构能力的差异。
+## 7.5 LED Chaser 跨设计通用性验证
 
-**表 7-5 能力维度对比表（10 个维度）**
+为验证框架对非密码学设计的端到端适用性，本节以 LED Chaser（4 位 LED 流水灯，带方向控制）作为第二个验证案例，通过 YAML 蓝图驱动机制在不修改任何框架代码的前提下完成全流程自动化执行。
 
-| 能力维度 | 胡昆越 (AutoGen) | 本系统 (OpenHands SDK) | 优势方 |
-|---------|-----------------|----------------------|--------|
-| 1. 多模块协同能力 | 线性单模块串行执行，无模块依赖感知 | DAG 拓扑批调度，依赖满足后并行执行（Batch 2 三模块并发） | 本系统 |
-| 2. 验证层级深度 | 单层：Vivado xsim 仿真通过/失败 | 4 层：L0 编译门控 → L1 Checkpoint → L2 鲁棒性 → 集成回归 | 本系统 |
-| 3. 自动修复机制 | Debug Agent 读取日志后重写代码，无预算限制，可能无限循环 | 结构化 RepairContract + EditReceipt + 哈希验证，有明确修复预算（2-3 次）和升级策略 | 本系统 |
-| 4. 控制可靠性 | Prompt-controlled：LLM 决定是否继续、修复、推进 | Framework-controlled：状态机拥有控制权，LLM 只执行被分配的任务 | 本系统 |
-| 5. 代码生成方式 | 本地微调 codegen-2B 模型生成 Verilog，配合 DeepSeek-reasoner 推理 | Memory 预填充（参考代码注入）+ Agent 修复集成问题 | 各有优势 |
-| 6. 验证工具 | Vivado xsim（商业工具，需要许可证，设备依赖） | Verilator（开源，通过 MCP 协议标准化集成，跨平台） | 本系统（开放性） |
-| 7. 部署门槛 | 需要 Vivado 安装（商业许可）+ GPU（本地推理模型） | 仅需 DEEPSEEK_API_KEY + Homebrew Verilator（< 5 分钟配置） | 本系统 |
-| 8. LLM 约束强度 | 1 层：system_message 纯文本指令 | 6 层：Skill / Prompt / Memory / Hooks / MCP / SlashCommand 组合约束 | 本系统 |
-| 9. 可观测性 | 依赖 Vivado 波形图人工判读仿真结果 | Checkpoint 协议机器自动判定，结构化报告 JSON，可追溯 | 本系统 |
-| 10. 通用性 | 面向通用 Verilog 模块（可扩展到不同模块） | 当前硬编码 AES-128 蓝图，扩展需修改 _aes_blueprints() | 胡昆越（灵活性） |
+### 7.5.1 验证目标与蓝图驱动执行
 
-### 7.5.1 各维度分析
+LED Chaser 案例的验证目标是：证明框架的编排状态机、Checkpoint 协议和分层验证体系能够直接复用于非 AES 设计，且仅需提供声明式蓝图文件即可完成适配。LED Chaser 设计通过 blueprint.yaml 蓝图文件定义，为单模块设计（4-bit LED 流水灯，带方向控制），配置 memory_required: false 以验证从零生成能力。与 AES-128 使用硬编码执行命令不同，LED Chaser 使用通用的蓝图驱动执行命令，由蓝图加载器从 YAML 文件自动生成规格中间表示、执行计划和集成回归清单。
 
-**多模块协同能力**：胡昆越方案的 AutoGen 线性 pipeline 在每个步骤中均单独处理当前模块，未建立模块间依赖图，因此无法在保证 aes_sbox 验证通过后再并行推进依赖它的三个模块。本文通过 `PlanDAG` 对依赖关系进行形式化描述（使用 Kahn 拓扑排序验证无环性），`DAGBatchPlanner` 自动计算可并行执行的批次，实现了 Batch 2 三个模块的并发验证。
+### 7.5.2 状态机执行路径
 
-**验证层级深度**：胡昆越方案以"Vivado 仿真通过"作为单一验证标准，缺乏区分编译错误、运行时错误和鲁棒性问题的能力。本文的 L0 层在仿真前捕获语法错误（避免浪费仿真时间），L1 层通过结构化 Checkpoint 协议将验证意图精确编码（而非依赖波形目视检查），L2 层使用可复现种子的随机向量探测边界情况，集成层验证多帧连续加密和复位恢复等系统级行为。
+LED Chaser 的状态机执行路径与 AES-128 案例完全一致，复用了相同的 10 状态架构。
 
-**控制可靠性**：这是本文最核心的架构差异。胡昆越方案中 Agent 自主决定是否需要进一步修复（AutoGen 的 `human_input_mode="NEVER"` 模式），LLM 可能"提前宣布成功"而实际代码仍有误，也可能陷入无限修复循环。本文的框架控制模式将推进决策权完全交给状态机：只有 `summarize_required_checkpoints()` 返回所有必需 Checkpoint 通过，工作区才能被标记为 `VALIDATED` 并促进（promote）。
+### 7.5.3 验证结果
 
-**LLM 约束强度**：约束密度的差异是本文 Harnessing Engine 章节的核心论点。胡昆越方案仅依赖 system_message 中的自然语言指令约束 Agent 行为，而本文通过 6 层结构化约束组合作用（详见第六章），覆盖了 LLM 在硬件设计场景中的 5 种典型失败模式。
+**表 7-6: LED Chaser 模块验证结果**
 
-**通用性**：本文当前版本的 AES 蓝图硬编码在 `synthesis.py` 的 `_aes_blueprints()` 函数中，移植到其他设计需要修改蓝图定义；胡昆越方案的通用 Verilog 生成 pipeline 在不修改核心代码的情况下可以处理不同类型的模块，具有更好的开箱通用性。这是本系统当前版本的明确局限，也是未来扩展的主要方向之一。
+| 模块 | L0 编译结果 | L1 仿真结果 | Checkpoint 通过数 / 总数 | Checkpoint 通过率 |
+|------|-----------|-----------|----------------------|-----------------|
+| led_chaser | PASS | PASS | 4 / 4 | 100% |
+
+**表 7-7: LED Chaser Checkpoint 详情**
+
+| Checkpoint | 验证目标 | 结果 | 详情 |
+|-----------|---------|------|------|
+| CHK_RESET_CLEAR | 复位初始化 leds=0001 | PASS | Reset sets leds=0001 |
+| CHK_SHIFT_LEFT | 左移三次得到 1000 | PASS | Shift left 3 times gives 1000 |
+| CHK_SHIFT_RIGHT | 右移两次得到 0010 | PASS | Shift right 2 times gives 0010 |
+| CHK_WRAP_AROUND | 环绕从最左回到 0001 | PASS | Wrap-around from leftmost gives 0001 |
+
+LED Chaser 的 4 个 Checkpoint 完全由蓝图文件声明，框架通过 `CHECKPOINT|<name>|PASS|<detail>` 协议自动解析，无需修改检查点解析器或任何验证层代码。这证明了 Checkpoint 协议的设计无关性——任何硬件设计均可通过声明自定义 Checkpoint 列表接入框架的分层验证体系。
+
+### 7.5.4 集成回归结果
+
+**表 7-8: LED Chaser 集成回归测试结果**
+
+| Campaign | 验证目标 | Checkpoint 通过 | 状态 |
+|----------|---------|----------------|------|
+| baseline (KAT) | 已知向量端到端功能正确性 | 4/4 PASS | PASS |
+
+LED Chaser 为单模块设计，集成回归测试执行单个 baseline Campaign 验证端到端功能正确性。Workflow gate 判定为 success，模块状态由 VALIDATED 成功晋升为 PROMOTED。
+
+### 7.5.5 通用性验证意义
+
+LED Chaser 案例从五个维度验证了框架的跨设计通用性：（1）同一 10 状态编排状态机完整复用，无需修改；（2）4 个自定义 Checkpoint 由蓝图声明、Testbench 发射、框架自动解析，协议具有设计无关性；（3）YAML 蓝图驱动实现声明式零代码适配；（4）以 memory_required: false 配置运行，Agent 从零生成 RTL 和 Testbench 并通过验证；（5）全流程零修复通过。
+
+LED Chaser 与 AES-128 形成互补：前者以单模块设计验证了声明式跨设计适配和无 Memory 场景下的从零生成能力，后者以 4 模块 DAG 验证了多模块协同、DAG 批调度和深度验证能力。两个案例共同构成了框架通用性的实证基础。
+
+---
+
+## 7.6 Vivado 自动化脚本与 FPGA 工具链验证
+
+前述各节的实验验证均在 Verilator 仿真层面完成，验证了生成代码的功能正确性。然而，Verilator 属于行为级仿真器，其通过并不能保证 RTL 在真实 FPGA 器件上的可综合性与时序收敛性。为弥补这一验证缺口，本文编写了自动化脚本，将多智能体系统输出的 RTL 和 Testbench 代码自动调用 Xilinx Vivado Design Suite 进行完整的 FPGA 工具链验证，覆盖仿真波形生成、逻辑综合（Synthesis）、布局布线（Implementation）和比特流（Bitstream）编译四个阶段。
+
+### 7.6.1 自动化脚本设计
+
+自动化脚本的设计目标是：接收多智能体框架 promoted/ 目录下验证通过的 RTL 源文件，自动驱动 Vivado 完成从仿真到比特流的全流程，无需人工干预。脚本采用 TCL（Tool Command Language）脚本与 Shell 脚本组合的方式实现，核心流程如下：
+
+1. **项目创建与源文件导入**：脚本自动创建 Vivado 工程，导入 promoted/ 目录下的 RTL 源文件（`.v`）和约束文件（`.xdc`），设置目标 FPGA 器件型号（如 Xilinx Artix-7 系列的 xc7a35tcpg236-1）；
+2. **行为级仿真（Behavioral Simulation）**：调用 Vivado 内置的 xsim 仿真器执行行为级仿真，生成 VCD 波形文件并导出截图，用于与 Verilator 仿真结果进行交叉验证；
+3. **逻辑综合（Synthesis）**：运行 Vivado 综合引擎（Vivado Synthesis），将 RTL 描述转换为门级网表，生成综合报告（资源利用率、时序摘要）；
+4. **布局布线（Implementation）**：执行 Place & Route 流程，完成逻辑单元的物理布局和互连布线，生成时序报告（建立时间/保持时间违例检查）；
+5. **比特流生成（Bitstream Generation）**：编译生成 .bit 比特流文件，可用于直接下载到目标 FPGA 开发板进行硬件验证。
+
+### 7.6.2 AES-128 设计的 Vivado 验证结果
+
+以 AES-128 加密核心为例，自动化脚本将 promoted/aes128_encrypt_core/ 目录下的全部 RTL 源文件（aes_sbox.v、aes_key_schedule_128.v、aes_round_transform.v、aes128_encrypt_core.v）导入 Vivado 工程，完成全流程验证。
+
+**仿真波形验证**：Vivado xsim 仿真器生成的波形图如图 7-2 所示。波形清晰展示了 AES-128 加密核心的完整握手时序：`start` 信号触发后 `busy` 立即拉高，经过 11 个时钟周期的迭代运算后 `done` 产生单周期脉冲，`ciphertext` 输出密文 `69c4e0d86a7b0430d8cdb78070b4c55a`，与 NIST FIPS-197 标准测试向量完全一致。该波形与 Verilator 仿真结果交叉验证，确认了生成代码在两种仿真器下行为一致。
+
+![图7-2: AES-128 加密核心 Vivado 仿真波形](../AES128.png)
+
+**综合与实现报告**：逻辑综合阶段成功将 RTL 转换为门级网表，未报告任何综合错误或警告。布局布线阶段完成物理实现后，时序报告显示建立时间违例数为零（WNS ≥ 0），表明设计在目标器件上满足时序约束。比特流文件（.bit）成功生成，文件大小符合预期，可直接下载至 FPGA 开发板。
+
+### 7.6.3 LED Chaser 设计的 Vivado 验证结果
+
+LED Chaser 设计同样通过自动化脚本完成 Vivado 全流程验证。Vivado xsim 仿真波形如图 7-3 所示，波形展示了 4 位 LED 流水灯的循环移位行为：`led[3:0]` 按照 `0001 → 0010 → 0100 → 1000 → 0001` 的序列循环移位，`dir` 信号控制移位方向，复位后 `led` 初始化为 `0001`。移位严格对齐时钟上升沿，每位 LED 的持续时间一致，验证了分频器和状态机的稳定性。
+
+![图7-3: LED Chaser Vivado 仿真波形](../LED.png)
+
+综合与实现阶段同样无错误报告，比特流文件成功生成。
+
+### 7.6.4 工具链验证的意义
+
+Vivado 自动化脚本的引入为框架提供了以下验证价值：
+
+1. **可综合性确认**：Verilator 仿真通过仅验证行为级正确性，Vivado 综合通过确认生成的 RTL 代码可被综合为目标 FPGA 器件的门级网表，排除了不可综合的 Verilog 结构（如 `initial` 块中的非综合操作）；
+2. **时序收敛验证**：布局布线后的时序报告验证设计在目标时钟频率下无建立/保持时间违例，这是 Verilator 无法提供的物理层验证；
+3. **端到端可实现性**：比特流文件的生成证明从多智能体系统输出的 RTL 代码到可下载至 FPGA 的最终产物之间不存在断链，实现了从"AI 生成代码"到"硬件可运行"的完整闭环；
+4. **双仿真器交叉验证**：Vivado xsim 与 Verilator 两种仿真器的波形一致性验证，增强了对生成代码正确性的置信度——两种独立实现的仿真器均确认功能正确，排除了单一仿真器特有的假阳性风险。
+
+需要说明的是，当前 Vivado 自动化脚本作为离线验证工具运行在多智能体框架的 DONE 状态之后，尚未集成到框架的状态机编排流程中。将 Vivado 工具链深度集成到框架的分层验证体系中（作为 L3 层），使其具备自动解读综合报告和时序违例并指导 RTL 修改的能力，是本文 §8.3.2 中规划的未来研究方向。

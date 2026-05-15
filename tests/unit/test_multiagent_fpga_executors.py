@@ -4,16 +4,16 @@ from pathlib import Path
 
 import pytest
 
-from MultiAgent_FPGA.aes_mvp.artifacts import (
+from MultiAgent_FPGA.fpga_flow.artifacts import (
     PlanDAG,
 )
-from MultiAgent_FPGA.aes_mvp.executors import (
+from MultiAgent_FPGA.fpga_flow.executors import (
     IntegrationRegressionExecutor,
     L0Executor,
     L1Executor,
     L2CampaignExecutor,
 )
-from MultiAgent_FPGA.aes_mvp.synthesis import (
+from MultiAgent_FPGA.fpga_flow.synthesis import (
     DEFAULT_AUTONOMOUS_GOAL,
     synthesize_integration_manifest,
     synthesize_plan_dag,
@@ -21,9 +21,12 @@ from MultiAgent_FPGA.aes_mvp.synthesis import (
 )
 
 
-def _synthesized_context() -> tuple[PlanDAG, object]:
+def _synthesized_context(
+    *,
+    design_root: Path | None = None,
+) -> tuple[PlanDAG, object]:
     spec_ir = synthesize_spec_ir(system_goal=DEFAULT_AUTONOMOUS_GOAL)
-    plan_dag = synthesize_plan_dag(spec_ir)
+    plan_dag = synthesize_plan_dag(spec_ir, design_root=design_root)
     manifest = synthesize_integration_manifest(spec_ir, plan_dag)
     return plan_dag, manifest
 
@@ -128,17 +131,17 @@ def _write_common_aes_tree(package_root: Path) -> None:
     _write_text(package_root, 'tb/aes128_encrypt_core_tb.cpp', '// top tb\n')
     _write_text(
         package_root,
-        'vectors/aes128/aes_sbox_kat.txt',
+        'vectors/aes_sbox_kat.txt',
         'key=00\nplaintext=00\nciphertext=00\n',
     )
     _write_text(
         package_root,
-        'vectors/aes128/aes128_encrypt_core_l2_rand_small.txt',
+        'vectors/aes128_encrypt_core_l2_rand_small.txt',
         '# L2 campaign seed corpus\nprofile=rand_small\ncases=32\nseed=1001\n',
     )
     _write_text(
         package_root,
-        'vectors/aes128/aes128_encrypt_core_regress.txt',
+        'vectors/aes128_encrypt_core_regress.txt',
         '# regression corpus\n',
     )
 
@@ -146,7 +149,7 @@ def _write_common_aes_tree(package_root: Path) -> None:
 def test_l2_campaign_executor_resolves_top_profile_inputs_and_outputs(tmp_path):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    plan_dag, manifest = _synthesized_context()
+    plan_dag, manifest = _synthesized_context(design_root=package_root)
     top_node = plan_dag.nodes[-1]
     adapter = FakeVerilatorAdapter(
         l2_checkpoints=top_node.pass_criteria.l1.coverage_checkpoints,
@@ -162,12 +165,10 @@ def test_l2_campaign_executor_resolves_top_profile_inputs_and_outputs(tmp_path):
 
     l2_compile = next(call for call in adapter.calls if call[0] == 'simulate')
     assert l2_compile[1]['extra_arguments']['plusargs'] == {
-        'aes_mvp_package_root': str(package_root.resolve()),
+        'fpga_flow_package_root': str(package_root.resolve()),
         'profile': 'rand_small',
         'vecfile': str(
-            (
-                package_root / 'vectors/aes128/aes128_encrypt_core_l2_rand_small.txt'
-            ).resolve()
+            (package_root / 'vectors/aes128_encrypt_core_l2_rand_small.txt').resolve()
         ),
         'cases': 32,
         'seed': 1001,
@@ -183,7 +184,7 @@ def test_l2_campaign_executor_resolves_top_profile_inputs_and_outputs(tmp_path):
 def test_l2_campaign_executor_rejects_top_only_profiles_for_leaf_nodes(tmp_path):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    plan_dag, manifest = _synthesized_context()
+    plan_dag, manifest = _synthesized_context(design_root=package_root)
     leaf_node = plan_dag.nodes[0]
     adapter = FakeVerilatorAdapter(l2_checkpoints=[], integration_checkpoints=[])
     executor = L2CampaignExecutor(
@@ -201,7 +202,7 @@ def test_integration_regression_executor_compiles_manifest_and_validates_checkpo
 ):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    _, manifest = _synthesized_context()
+    _, manifest = _synthesized_context(design_root=package_root)
     adapter = FakeVerilatorAdapter(
         l2_checkpoints=list(manifest.regression_checkpoints),
         integration_checkpoints=manifest.regression_checkpoints,
@@ -228,7 +229,10 @@ def test_integration_regression_executor_compiles_manifest_and_validates_checkpo
         'useExistingBuild': True,
         'autoGenerateTestbench': False,
         'enableWaveform': True,
-        'plusargs': {'aes_mvp_package_root': str(package_root.resolve())},
+        'plusargs': {
+            'fpga_flow_package_root': str(package_root.resolve()),
+            'vecfile': str((package_root / manifest.vector_set).resolve()),
+        },
     }
     assert report.path.name == 'integration_regression_result.json'
     assert report.payload['status'] == 'passed'
@@ -256,7 +260,7 @@ def test_integration_regression_executor_compiles_manifest_and_validates_checkpo
 def test_l1_executor_uses_manifest_rtl_files_for_top_level_reintegration(tmp_path):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    plan_dag, manifest = _synthesized_context()
+    plan_dag, manifest = _synthesized_context(design_root=package_root)
     top_node = plan_dag.nodes[-1]
     adapter = FakeVerilatorAdapter(
         l2_checkpoints=[],
@@ -286,8 +290,14 @@ def test_l1_executor_uses_manifest_rtl_files_for_top_level_reintegration(tmp_pat
     assert len(simulate_calls) == 1
 
     simulate_call = simulate_calls[0]
+    resolved_vecfile = str(
+        (package_root / top_node.pass_criteria.l1.vector_set).resolve()
+    )
     assert simulate_call[1]['extra_arguments'] == {
-        'plusargs': {'aes_mvp_package_root': str(package_root.resolve())},
+        'plusargs': {
+            'fpga_flow_package_root': str(package_root.resolve()),
+            'vecfile': resolved_vecfile,
+        },
     }
 
     compile_call = compile_calls[0]
@@ -305,7 +315,7 @@ def test_l1_executor_uses_manifest_rtl_files_for_top_level_reintegration(tmp_pat
 def test_l1_executor_prefers_expanded_workspace_closure_for_top_node(tmp_path):
     package_root = tmp_path
     _write_common_aes_tree(package_root)
-    plan_dag, manifest = _synthesized_context()
+    plan_dag, manifest = _synthesized_context(design_root=package_root)
     top_node = plan_dag.nodes[-1]
 
     promoted_root = package_root / 'reports' / 'conversations' / 'test' / 'promoted'

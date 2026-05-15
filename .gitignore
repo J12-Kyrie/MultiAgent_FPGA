@@ -289,4 +289,6 @@ test-results
 # local agent/tool state
 /.agents/
 /.codex/
+.omc/
+.cursor/
 /examples/verilator_mcp/sim_output/

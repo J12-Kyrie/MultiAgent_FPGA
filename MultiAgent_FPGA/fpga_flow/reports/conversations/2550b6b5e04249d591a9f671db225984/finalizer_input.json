@@ -1,0 +1,97 @@
+{
+  "batch_history_count": 2,
+  "batch_history_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/batch_history.json",
+  "conversation_id": "2550b6b5-e042-49d5-91a9-f671db225984",
+  "deterministic_execution": {
+    "conversation_id": "2550b6b5-e042-49d5-91a9-f671db225984",
+    "focus_module_id": "led_chaser",
+    "generation_results_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/generation_results",
+    "integration": {
+      "campaign_count": 1,
+      "result_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/integration_regression_result.json",
+      "status": "passed"
+    },
+    "integration_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration_summary.json",
+    "modules": {
+      "led_chaser": {
+        "changed_files": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted/led_chaser/rtl/led_chaser.v",
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted/led_chaser/tb/led_chaser_tb.cpp"
+        ],
+        "checkpoint_summary": {
+          "CHK_RESET_CLEAR": "PASS|Reset sets leds=0001",
+          "CHK_SHIFT_LEFT": "PASS|Shift left 3 times gives 1000",
+          "CHK_SHIFT_RIGHT": "PASS|Shift right 2 times gives 0010",
+          "CHK_WRAP_AROUND": "PASS|Wrap-around from leftmost gives 0001"
+        },
+        "design_brief_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/contracts/design_brief.json",
+        "draft_rtl_paths": [
+          "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/draft/rtl/led_chaser.v"
+        ],
+        "draft_tb_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/draft/tb/led_chaser_tb.cpp",
+        "edit_receipt_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/edit_receipt.json",
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "led_chaser",
+        "promoted": true,
+        "promoted_targets": {
+          "rtl": "{\"led_chaser.v\": \"/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted/led_chaser/rtl/led_chaser.v\"}",
+          "tb": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted/led_chaser/tb/led_chaser_tb.cpp"
+        },
+        "recommended_mode": null,
+        "repair_attempts": 0,
+        "repair_guidance": [
+          "Read the design brief and validation artifacts, make one focused draft edit, then rerun the executor command."
+        ],
+        "repair_request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/repair_request.json",
+        "validation_paths": {
+          "l0_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/l0_result.json",
+          "module_run_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/sim/module_run_result.json",
+          "simulation_log": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/sim/simulation.log",
+          "validation_error": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/validation_error.json",
+          "validation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/validation_summary.json",
+          "waveform": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/sim/simulation.vcd"
+        },
+        "validation_status": "passed",
+        "workspace_state": "promoted",
+        "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/workspace_state.json"
+      }
+    },
+    "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promotion_events.json",
+    "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promotion_failures.json"
+  },
+  "fragility_memory_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/fragility_memory.json",
+  "integration_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration_summary.json",
+  "plan_dag_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/plan_dag.json",
+  "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promotion_events.json",
+  "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promotion_failures.json",
+  "spec_ir_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/spec_ir.json",
+  "system_goal": "Implement and validate a 4-bit LED chaser with direction control.",
+  "workflow_gate": {
+    "blocked_modules": [],
+    "cascade_blocked_modules": [],
+    "completion_status": "success",
+    "decision": "success",
+    "integration_attempts": 1,
+    "integration_status": "passed",
+    "next_batch_ids": [],
+    "pending_modules": [],
+    "primary_sink": "led_chaser",
+    "processed_batch_ids": [
+      "generation_layer_1_1_generate_validate",
+      "integration"
+    ],
+    "promoted_modules": [
+      "led_chaser"
+    ],
+    "protocol_violation": null,
+    "ready_sink_modules": [
+      "led_chaser"
+    ],
+    "reasons": [],
+    "required_modules": [
+      "led_chaser"
+    ]
+  }
+}

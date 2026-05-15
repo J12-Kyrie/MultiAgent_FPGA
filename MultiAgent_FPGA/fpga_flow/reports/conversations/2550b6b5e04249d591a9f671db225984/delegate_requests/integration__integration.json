@@ -1,0 +1,35 @@
+{
+  "batch_id": "integration",
+  "manual_command_policy": {
+    "manual_executor_command": "Manual reproduction only. Runtime dispatch uses executor_kind plus executor_inputs.",
+    "manual_integration_command": "Manual integration reproduction only. Runtime dispatch uses executor_kind=run_integration plus executor_inputs.",
+    "manual_receipt_command": "Manual repair receipt reproduction only. Runtime dispatch uses preflight_record_repair_edit."
+  },
+  "report_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984",
+  "task": {
+    "agent_type": "framework_integration",
+    "mode": "integration",
+    "prompt": "Execute the framework-owned integration regression.\nMode: integration.\nFirst action: call 'run_executor' with this task contract.\nUse the resulting observation to inspect only the named integration artifacts.",
+    "request": {
+      "allowed_progress_actions": [
+        "run_executor"
+      ],
+      "executor_inputs": {
+        "output_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration",
+        "promoted_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted"
+      },
+      "executor_kind": "run_integration",
+      "module_id": "led_chaser",
+      "next_read_paths": [
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/integration_regression_result.json"
+      ],
+      "result_paths": {
+        "integration_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/integration/integration_regression_result.json"
+      },
+      "stage": "INTEGRATION_REGRESSION",
+      "workflow_gate_hint": "framework_will_evaluate_terminal_integration_status",
+      "working_directory": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/led_chaser"
+    },
+    "worker_id": "integration"
+  }
+}

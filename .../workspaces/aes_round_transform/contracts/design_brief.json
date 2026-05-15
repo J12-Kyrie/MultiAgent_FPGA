@@ -1,0 +1,44 @@
+{
+  "checkpoints": [
+    "CHK_ROUND_STATE_MATCH"
+  ],
+  "dependency_notes": [
+    "aes_sbox must remain compatible with aes_sbox and CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail>."
+  ],
+  "design_goals": [
+    "Preserve the frozen aes_round_transform interface exactly.",
+    "Support both normal rounds and final-round bypass of MixColumns.",
+    "Produce CHK_ROUND_STATE_MATCH through the self-checking .cpp testbench."
+  ],
+  "implementation_hints": [
+    "Start from the frozen interface and keep these ports stable: state_in, round_key, final_round, sub_bytes_state, shift_rows_state, mix_columns_state, state_out.",
+    "Use the declared vectors and required checkpoints as the first acceptance targets: CHK_ROUND_STATE_MATCH.",
+    "Emit checkpoints using the exact frozen contract CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail>.",
+    "Replace scaffold placeholders in both draft RTL and draft TB before the second validation pass.",
+    "Preserve compatibility with dependency outputs before optimizing local implementation details.",
+    "Use these frozen vector anchors from vectors/aes128/aes_round_transform_kat.txt as concrete acceptance targets: plaintext=00112233445566778899aabbccddeeff; key=000102030405060708090a0b0c0d0e0f; state_after_add_round_key=00102030405060708090a0b0c0d0e0f0; state_after_sub_bytes=63cab7040953d051cd60e0e7ba70e18c; state_after_shift_rows=6353e08c0960e104cd70b751bacad0e7; state_after_mix_columns=5f72641557f5bc92f7be3b291db9f91a; round_key_1=d6aa74fdd2af72fadaa678f1d6ab76fe; state_after_round_1=89d810e8855ace682d1843d8cb128fe4."
+  ],
+  "module_id": "aes_round_transform",
+  "repair_hints": [
+    "Read generation_result.json, workspace_state.json, and validation_summary.json before editing after a failed validation run.",
+    "Fix the first missing or failed checkpoint before broader refactors.",
+    "When editing a .cpp testbench, emit the exact CHECKPOINT contract CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail> rather than a bare checkpoint name.",
+    "After a failed executor run, make at least one concrete draft RTL or TB edit before rerunning the executor command.",
+    "Use these frozen vector anchors from vectors/aes128/aes_round_transform_kat.txt as concrete acceptance targets: plaintext=00112233445566778899aabbccddeeff; key=000102030405060708090a0b0c0d0e0f; state_after_add_round_key=00102030405060708090a0b0c0d0e0f0; state_after_sub_bytes=63cab7040953d051cd60e0e7ba70e18c; state_after_shift_rows=6353e08c0960e104cd70b751bacad0e7; state_after_mix_columns=5f72641557f5bc92f7be3b291db9f91a; round_key_1=d6aa74fdd2af72fadaa678f1d6ab76fe; state_after_round_1=89d810e8855ace682d1843d8cb128fe4."
+  ],
+  "skill_paths": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_spec_decomposition.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_module_patterns.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_tb_contracts.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_repair_heuristics.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_verilator_profile.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/verilog_verilator.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/chatfire_deepseek_sdk.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/verilator_mcp_setup.md"
+  ],
+  "summary": "Generate aes_round_transform for the AES-128 encrypt autonomous full-system.",
+  "vectors": [
+    "vectors/aes128/aes_round_transform_kat.txt"
+  ],
+  "workspace_strategy": "Generate and edit only draft files under the session workspace. Promote to canonical RTL/TB only after L0 and L1 pass."
+}

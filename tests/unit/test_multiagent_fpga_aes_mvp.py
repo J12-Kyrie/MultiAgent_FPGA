@@ -2,18 +2,18 @@ from __future__ import annotations
 
 import json
 
-from MultiAgent_FPGA.aes_mvp.agents import (
+from MultiAgent_FPGA.fpga_flow.agents import (
     build_finalizer_orchestrator_spec,
     build_l2_campaign_spec,
     build_module_worker_spec,
     build_repair_worker_spec,
     build_workflow_orchestrator_spec,
 )
-from MultiAgent_FPGA.aes_mvp.artifacts import (
+from MultiAgent_FPGA.fpga_flow.artifacts import (
     NodeWorkspaceState,
     ValidationFailurePhase,
 )
-from MultiAgent_FPGA.aes_mvp.generation import (
+from MultiAgent_FPGA.fpga_flow.generation import (
     build_module_contract,
     build_module_design_brief,
     build_testbench_contract,
@@ -29,7 +29,7 @@ from MultiAgent_FPGA.aes_mvp.generation import (
     write_validation_summary,
     write_workspace_record,
 )
-from MultiAgent_FPGA.aes_mvp.llm_profiles import (
+from MultiAgent_FPGA.fpga_flow.llm_profiles import (
     DEEPSEEK_BASE_URL,
     DEEPSEEK_CHAT_MODEL,
     DEEPSEEK_REASONER_MODEL,
@@ -43,25 +43,25 @@ from MultiAgent_FPGA.aes_mvp.llm_profiles import (
     run_deepseek_preflight,
     run_deepseek_preflight_suite,
 )
-from MultiAgent_FPGA.aes_mvp.memory import MemoryStore
-from MultiAgent_FPGA.aes_mvp.orchestrator import AESWorkflowOrchestrator
-from MultiAgent_FPGA.aes_mvp.policy import (
+from MultiAgent_FPGA.fpga_flow.memory import MemoryStore
+from MultiAgent_FPGA.fpga_flow.orchestrator import AESWorkflowOrchestrator
+from MultiAgent_FPGA.fpga_flow.policy import (
     LLMProfileName,
     OrchestratorState,
     SubagentPolicy,
 )
-from MultiAgent_FPGA.aes_mvp.prompts import (
+from MultiAgent_FPGA.fpga_flow.prompts import (
     build_execution_orchestrator_prompt,
     build_l2_campaign_prompt,
     build_module_worker_prompt,
 )
-from MultiAgent_FPGA.aes_mvp.skill_refs import (
+from MultiAgent_FPGA.fpga_flow.skill_refs import (
     get_all_skill_refs,
     get_documentation_skill_refs,
     get_memory_skill_refs,
     get_runtime_skill_refs,
 )
-from MultiAgent_FPGA.aes_mvp.synthesis import (
+from MultiAgent_FPGA.fpga_flow.synthesis import (
     DEFAULT_AUTONOMOUS_GOAL,
     IntegrationReadinessResolver,
     synthesize_agent_execution_policy,
@@ -131,7 +131,7 @@ def test_prompts_encode_autonomous_generate_rules():
     l2_prompt = build_l2_campaign_prompt(
         plan_dag.nodes[-1],
         profile='rand_small',
-        vecfile='vectors/aes128/aes128_encrypt_core_l2_rand_small.txt',
+        vecfile='vectors/aes128_encrypt_core_l2_rand_small.txt',
         cases=32,
         seed=1001,
     )
@@ -161,11 +161,13 @@ def test_aes128_encrypt_core_module_worker_prompt_defers_detail_to_skills():
     prompt = build_module_worker_prompt(node)
     default_prompt = build_module_worker_prompt(default_node)
     assert 'Module Worker SubAgent for aes128_encrypt_core' in prompt
-    assert 'aes_tb_common.hpp' in prompt
     assert 'aes-tb-contracts' in prompt
 
-    # Both prompts now inline memory content; verify the specialized prompt
-    # has fewer non-memory instruction lines than the default.
+    # Generate mode inlines memory which includes aes_tb_common.hpp reference.
+    gen_prompt = build_module_worker_prompt(node, active_mode='generate')
+    assert 'aes_tb_common.hpp' in gen_prompt
+
+    # Unified prompt produces same non-memory instruction structure for all modules.
     def _non_memory_lines(p: str) -> list[str]:
         in_memory = False
         out: list[str] = []
@@ -259,7 +261,7 @@ def test_deepseek_preflight_handles_success(monkeypatch):
         )
 
     monkeypatch.setattr(
-        'MultiAgent_FPGA.aes_mvp.llm_profiles.requests.post',
+        'MultiAgent_FPGA.fpga_flow.llm_profiles.requests.post',
         fake_post,
     )
 
@@ -291,7 +293,7 @@ def test_deepseek_preflight_handles_provider_errors(monkeypatch):
             return {'error': {'message': '当前分组无可用渠道'}}
 
     monkeypatch.setattr(
-        'MultiAgent_FPGA.aes_mvp.llm_profiles.requests.post',
+        'MultiAgent_FPGA.fpga_flow.llm_profiles.requests.post',
         lambda *args, **kwargs: FakeErrorResponse(),
     )
 
@@ -332,7 +334,7 @@ def test_agent_specs_follow_role_contract():
     l2_spec = build_l2_campaign_spec(
         plan_dag.nodes[-1],
         profile='rand_small',
-        vecfile='vectors/aes128/aes128_encrypt_core_l2_rand_small.txt',
+        vecfile='vectors/aes128_encrypt_core_l2_rand_small.txt',
         cases=32,
         seed=1001,
     )
@@ -514,7 +516,7 @@ def test_repair_request_targets_draft_files_only(tmp_path):
         failure_phase=ValidationFailurePhase.CHECKPOINT_MISSING,
         missing_checkpoints=['CHK_SBOX_MATCH'],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox --workspace-root /tmp/work --strict-validation',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_sbox --workspace-root /tmp/work --strict-validation',
     )
     contract = load_repair_contract(tmp_path / node.module_id)
 
@@ -604,7 +606,7 @@ def test_repair_request_switches_to_rtl_when_tb_has_checkpoint_and_rtl_is_placeh
         generation_result_path=generation_result_path,
         missing_checkpoints=['CHK_SBOX_MATCH'],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox --workspace-root /tmp/work --strict-validation',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_sbox --workspace-root /tmp/work --strict-validation',
     )
     contract = load_repair_contract(workspace_root)
 
@@ -680,7 +682,7 @@ def test_repair_request_keeps_tb_primary_when_tb_only_has_bare_checkpoint_name(
         failure_phase=ValidationFailurePhase.CHECKPOINT_MISSING,
         missing_checkpoints=['CHK_SBOX_MATCH'],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox --workspace-root /tmp/work --strict-validation',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_sbox --workspace-root /tmp/work --strict-validation',
     )
     contract = load_repair_contract(workspace_root)
 
@@ -723,7 +725,7 @@ def test_verify_repair_edit_accepts_emit_checkpoint_helper(tmp_path):
         generation_result_path=generation_result_path,
         missing_checkpoints=['CHK_ROUND_STATE_MATCH'],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_round_transform --workspace-root /tmp/work --strict-validation',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_round_transform --workspace-root /tmp/work --strict-validation',
     )
     contract = load_repair_contract(workspace_root)
     tb_path = workspace_root / 'draft' / 'tb' / 'aes_round_transform_tb.cpp'
@@ -856,7 +858,7 @@ def test_top_repair_request_requires_handshake_first_edit_tokens(tmp_path):
             'CHK_BUSY_ASSERTED',
         ],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes128_encrypt_core --workspace-root /tmp/work --promoted-root /tmp/promoted --strict-validation',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes128_encrypt_core --workspace-root /tmp/work --promoted-root /tmp/promoted --strict-validation',
     )
     contract = load_repair_contract(workspace_root)
 
@@ -994,7 +996,7 @@ def test_hook_payload_has_timestamp(tmp_path):
     """Verify _write_hook_event injects an ISO-8601 timestamp into the payload."""
     from unittest.mock import MagicMock
 
-    from MultiAgent_FPGA.aes_mvp.runtime.session import ExecutionSession
+    from MultiAgent_FPGA.fpga_flow.runtime.session import ExecutionSession
 
     session = object.__new__(ExecutionSession)
     session.report_root = tmp_path
@@ -1014,7 +1016,7 @@ def test_hook_io_error_does_not_crash(tmp_path):
     """Verify _write_hook_event catches OSError and returns None."""
     from unittest.mock import MagicMock, patch
 
-    from MultiAgent_FPGA.aes_mvp.runtime.session import ExecutionSession
+    from MultiAgent_FPGA.fpga_flow.runtime.session import ExecutionSession
 
     session = object.__new__(ExecutionSession)
     session.report_root = tmp_path
@@ -1034,7 +1036,7 @@ def test_hook_io_error_does_not_crash(tmp_path):
 
 def test_subagent_work_mode_has_exactly_five_members():
     """Step 1: BUILD and ARTIFACT_REVIEW removed."""
-    from MultiAgent_FPGA.aes_mvp.delegation import SubagentWorkMode
+    from MultiAgent_FPGA.fpga_flow.delegation import SubagentWorkMode
 
     assert len(SubagentWorkMode) == 5
     expected = {'generate', 'validate', 'repair', 'l2_execute', 'integration'}
@@ -1054,7 +1056,7 @@ def test_node_workspace_state_failed_exists():
 
 def test_write_defensive_failure_result(tmp_path):
     """Step 3: Defensive write produces valid generation_result.json."""
-    from MultiAgent_FPGA.aes_mvp.generation import write_defensive_failure_result
+    from MultiAgent_FPGA.fpga_flow.generation import write_defensive_failure_result
 
     result_path = write_defensive_failure_result(
         workspace_root=tmp_path,
@@ -1071,11 +1073,11 @@ def test_write_defensive_failure_result(tmp_path):
 
 def test_node_policy_engine_failed_is_terminal():
     """Step 3: NodePolicyEngine treats FAILED as terminal."""
-    from MultiAgent_FPGA.aes_mvp.synthesis import NodePolicyEngine
+    from MultiAgent_FPGA.fpga_flow.synthesis import NodePolicyEngine
 
     engine = NodePolicyEngine()
     # Create a minimal workspace record with FAILED state
-    from MultiAgent_FPGA.aes_mvp.artifacts import NodeWorkspaceRecord
+    from MultiAgent_FPGA.fpga_flow.artifacts import NodeWorkspaceRecord
 
     record = NodeWorkspaceRecord(
         module_id='aes_sbox',
@@ -1108,7 +1110,7 @@ def test_node_policy_engine_failed_is_terminal():
 
 def _make_workspace_record(state: NodeWorkspaceState):
     """Helper to create a minimal NodeWorkspaceRecord for policy engine tests."""
-    from MultiAgent_FPGA.aes_mvp.artifacts import NodeWorkspaceRecord
+    from MultiAgent_FPGA.fpga_flow.artifacts import NodeWorkspaceRecord
 
     return NodeWorkspaceRecord(
         module_id='aes_sbox',
@@ -1132,7 +1134,7 @@ def _make_workspace_record(state: NodeWorkspaceState):
 
 def test_node_policy_engine_promoted_returns_none():
     """PROMOTED workspace must not be sent to REPAIR even with failed validation."""
-    from MultiAgent_FPGA.aes_mvp.synthesis import NodePolicyEngine
+    from MultiAgent_FPGA.fpga_flow.synthesis import NodePolicyEngine
 
     engine = NodePolicyEngine()
     record = _make_workspace_record(NodeWorkspaceState.PROMOTED)
@@ -1144,7 +1146,7 @@ def test_node_policy_engine_promoted_returns_none():
 
 def test_node_policy_engine_promoted_state_preserved():
     """next_state must preserve PROMOTED even with failed validation status."""
-    from MultiAgent_FPGA.aes_mvp.synthesis import NodePolicyEngine
+    from MultiAgent_FPGA.fpga_flow.synthesis import NodePolicyEngine
 
     engine = NodePolicyEngine()
     record = _make_workspace_record(NodeWorkspaceState.PROMOTED)
@@ -1156,7 +1158,7 @@ def test_node_policy_engine_promoted_state_preserved():
 
 def test_node_policy_engine_validated_returns_none():
     """VALIDATED workspace must not be sent to REPAIR even with failed validation."""
-    from MultiAgent_FPGA.aes_mvp.synthesis import NodePolicyEngine
+    from MultiAgent_FPGA.fpga_flow.synthesis import NodePolicyEngine
 
     engine = NodePolicyEngine()
     record = _make_workspace_record(NodeWorkspaceState.VALIDATED)
@@ -1168,7 +1170,7 @@ def test_node_policy_engine_validated_returns_none():
 
 def test_node_policy_engine_validated_state_preserved():
     """next_state must preserve VALIDATED even with stale failed validation status."""
-    from MultiAgent_FPGA.aes_mvp.synthesis import NodePolicyEngine
+    from MultiAgent_FPGA.fpga_flow.synthesis import NodePolicyEngine
 
     engine = NodePolicyEngine()
     record = _make_workspace_record(NodeWorkspaceState.VALIDATED)
@@ -1180,7 +1182,7 @@ def test_node_policy_engine_validated_state_preserved():
 
 def test_node_policy_engine_handles_all_workspace_states():
     """Exhaustiveness guard: decide_next_mode handles every NodeWorkspaceState member."""
-    from MultiAgent_FPGA.aes_mvp.synthesis import NodePolicyEngine
+    from MultiAgent_FPGA.fpga_flow.synthesis import NodePolicyEngine
 
     engine = NodePolicyEngine()
     for ws_state in NodeWorkspaceState:
@@ -1195,7 +1197,7 @@ def test_node_policy_engine_handles_all_workspace_states():
 
 def test_write_cascade_block_result(tmp_path):
     """Step 4: Cascade block writes valid generation_result.json."""
-    from MultiAgent_FPGA.aes_mvp.generation import write_cascade_block_result
+    from MultiAgent_FPGA.fpga_flow.generation import write_cascade_block_result
 
     result_path = write_cascade_block_result(
         workspace_root=tmp_path,
@@ -1212,7 +1214,7 @@ def test_write_cascade_block_result(tmp_path):
 
 def test_write_budget_exhausted_result(tmp_path):
     """Step 5: Budget exhaustion writes valid generation_result.json."""
-    from MultiAgent_FPGA.aes_mvp.generation import write_budget_exhausted_result
+    from MultiAgent_FPGA.fpga_flow.generation import write_budget_exhausted_result
 
     result_path = write_budget_exhausted_result(
         workspace_root=tmp_path,

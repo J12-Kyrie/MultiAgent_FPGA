@@ -7,9 +7,9 @@ from uuid import uuid4
 
 import pytest
 
-from MultiAgent_FPGA.aes_mvp.__main__ import _run_node, build_parser
-from MultiAgent_FPGA.aes_mvp.artifacts import NodeWorkspaceRecord, NodeWorkspaceState
-from MultiAgent_FPGA.aes_mvp.generation import (
+from MultiAgent_FPGA.fpga_flow.__main__ import _run_node, build_parser
+from MultiAgent_FPGA.fpga_flow.artifacts import NodeWorkspaceRecord, NodeWorkspaceState
+from MultiAgent_FPGA.fpga_flow.generation import (
     increment_validation_runs,
     initialize_node_workspace,
     load_workspace_record,
@@ -18,7 +18,7 @@ from MultiAgent_FPGA.aes_mvp.generation import (
     write_repair_request,
     write_workspace_record,
 )
-from MultiAgent_FPGA.aes_mvp.llm_profiles import (
+from MultiAgent_FPGA.fpga_flow.llm_profiles import (
     DEEPSEEK_RESOLVED_MODEL,
     SDK_DEEPSEEK_MODEL,
     SDK_REASONING_EFFORT_FAST,
@@ -26,7 +26,7 @@ from MultiAgent_FPGA.aes_mvp.llm_profiles import (
     build_sdk_deepseek_official_fast_kwargs,
     build_sdk_deepseek_official_thinking_kwargs,
 )
-from MultiAgent_FPGA.aes_mvp.runtime import (
+from MultiAgent_FPGA.fpga_flow.runtime import (
     ConversationRunner,
     ConversationSummary,
     ExecutionSession,
@@ -34,11 +34,11 @@ from MultiAgent_FPGA.aes_mvp.runtime import (
     SdkAgentFactory,
     discover_sdk_environment,
 )
-from MultiAgent_FPGA.aes_mvp.runtime.context_assembler import BatchMessageEnvelope
-from MultiAgent_FPGA.aes_mvp.runtime.execution_tools import RunExecutor
-from MultiAgent_FPGA.aes_mvp.runtime.factory import VERILATOR_ALLOWED_MCP_REGEX
-from MultiAgent_FPGA.aes_mvp.runtime.runner import BatchRunSummary
-from MultiAgent_FPGA.aes_mvp.synthesis import (
+from MultiAgent_FPGA.fpga_flow.runtime.context_assembler import BatchMessageEnvelope
+from MultiAgent_FPGA.fpga_flow.runtime.execution_tools import RunExecutor
+from MultiAgent_FPGA.fpga_flow.runtime.factory import VERILATOR_ALLOWED_MCP_REGEX
+from MultiAgent_FPGA.fpga_flow.runtime.runner import BatchRunSummary
+from MultiAgent_FPGA.fpga_flow.synthesis import (
     DEFAULT_AUTONOMOUS_GOAL,
     DAGBatchPlanner,
     FragilityMemory,
@@ -91,7 +91,7 @@ def test_sdk_environment_is_discoverable_in_poetry_env():
 
 
 def test_sdk_shim_loads_explicit_site_packages_modules():
-    from MultiAgent_FPGA.aes_mvp.runtime.sdk_shim import load_sdk_modules
+    from MultiAgent_FPGA.fpga_flow.runtime.sdk_shim import load_sdk_modules
 
     sdk_modules = load_sdk_modules()
     assert sdk_modules.sdk.__name__ == 'openhands.sdk'
@@ -445,7 +445,7 @@ def test_runner_marks_finished_before_gate_pause_reason(tmp_path: Path):
 
 
 def test_resolve_vector_path_finds_package_vectors():
-    from MultiAgent_FPGA.aes_mvp.synthesis import (
+    from MultiAgent_FPGA.fpga_flow.synthesis import (
         resolve_vector_path,
         synthesize_plan_dag,
         synthesize_spec_ir,
@@ -503,7 +503,7 @@ def test_repair_batch_gate_materializes_edit_receipt(monkeypatch, tmp_path: Path
         generation_result_path=generation_result_path,
         missing_checkpoints=['CHK_SBOX_MATCH'],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_sbox',
     )
 
     draft_tb_path = workspace_root / 'draft' / 'tb' / 'aes_sbox_tb.cpp'
@@ -594,7 +594,7 @@ def test_materialize_current_batch_inlines_repair_contract(monkeypatch, tmp_path
         generation_result_path=generation_result_path,
         missing_checkpoints=[],
         failed_checkpoints=['CHK_SBOX_MATCH'],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_sbox',
     )
 
     batch = {
@@ -611,7 +611,7 @@ def test_materialize_current_batch_inlines_repair_contract(monkeypatch, tmp_path
                 'request': {
                     'module_id': 'aes_sbox',
                     'workspace_root': str(workspace_root),
-                    'manual_receipt_command': 'python -m MultiAgent_FPGA.aes_mvp record-repair-edit aes_sbox',
+                    'manual_receipt_command': 'python -m MultiAgent_FPGA.fpga_flow record-repair-edit aes_sbox',
                     'writable_paths': [
                         str(workspace_root / 'draft' / 'rtl' / 'aes_sbox.v'),
                         str(workspace_root / 'draft' / 'tb' / 'aes_sbox_tb.cpp'),
@@ -750,7 +750,7 @@ def test_run_executor_returns_structured_observation(monkeypatch, tmp_path: Path
     delegate_plan = session._build_delegate_plan()  # type: ignore[attr-defined]
     first_task = delegate_plan['batches'][0]['tasks'][0]
     monkeypatch.setattr(
-        'MultiAgent_FPGA.aes_mvp.runtime.execution_tools._dispatch_executor',
+        'MultiAgent_FPGA.fpga_flow.runtime.execution_tools._dispatch_executor',
         lambda task, executor_kind: {
             'module_id': task.request.module_id,
             'validation_status': 'failed',
@@ -894,7 +894,7 @@ def test_execution_orchestrator_condenser_attached_by_default(
     monkeypatch, tmp_path: Path
 ):
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
-    monkeypatch.delenv('AES_MVP_DISABLE_EXECUTION_CONDENSER', raising=False)
+    monkeypatch.delenv('FPGA_FLOW_DISABLE_EXECUTION_CONDENSER', raising=False)
     bootstrap = RuntimeBootstrap.build(
         persistence_dir=tmp_path / 'conversations',
         system_goal=DEFAULT_AUTONOMOUS_GOAL,
@@ -906,7 +906,7 @@ def test_execution_orchestrator_condenser_attached_by_default(
 
 def test_execution_orchestrator_condenser_disabled(monkeypatch, tmp_path: Path):
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
-    monkeypatch.setenv('AES_MVP_DISABLE_EXECUTION_CONDENSER', '1')
+    monkeypatch.setenv('FPGA_FLOW_DISABLE_EXECUTION_CONDENSER', '1')
     bootstrap = RuntimeBootstrap.build(
         persistence_dir=tmp_path / 'conversations',
         system_goal=DEFAULT_AUTONOMOUS_GOAL,
@@ -960,7 +960,7 @@ def test_autonomous_execution_loop_recovers_post_run_repair_receipt(
         generation_result_path=generation_result_path,
         missing_checkpoints=['CHK_SBOX_MATCH'],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_sbox',
     )
 
     draft_tb_path = workspace_root / 'draft' / 'tb' / 'aes_sbox_tb.cpp'
@@ -1209,7 +1209,7 @@ def test_run_node_missing_edit_receipt_does_not_consume_validation_budget(
         generation_result_path=generation_result_path,
         missing_checkpoints=['CHK_SBOX_MATCH'],
         failed_checkpoints=[],
-        rerun_command='python -m MultiAgent_FPGA.aes_mvp run-node aes_sbox --workspace-root /tmp/work --strict-validation',
+        rerun_command='python -m MultiAgent_FPGA.fpga_flow run-node aes_sbox --workspace-root /tmp/work --strict-validation',
     )
 
     before = load_workspace_record(workspace_root)
@@ -1684,7 +1684,7 @@ def test_autonomous_delegate_plan_materializes_workspace_contracts(
     request = first_task['request']
     assert request['workspace_root'].startswith(str(session.report_root))
     assert (
-        'python -m MultiAgent_FPGA.aes_mvp generate-node'
+        'python -m MultiAgent_FPGA.fpga_flow generate-node'
         in request['manual_executor_command']
     )
     assert request['result_paths']['generation_result'].endswith(

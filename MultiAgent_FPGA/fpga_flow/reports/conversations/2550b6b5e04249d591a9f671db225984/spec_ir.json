@@ -1,0 +1,24 @@
+{
+  "accept_condition": "design-specific",
+  "algorithm": "led_chaser",
+  "block_width": 4,
+  "clock_reset_assumptions": {},
+  "frozen_interfaces": [],
+  "interface_style": "generic",
+  "key_width": 1,
+  "latency_target_cycles": 1,
+  "microarchitecture": "generic",
+  "module_candidates": [
+    "led_chaser"
+  ],
+  "operation": "default",
+  "output_valid_condition": "design-specific",
+  "system_goal": "Implement and validate a 4-bit LED chaser with direction control.",
+  "timing_targets": {},
+  "variant": "led_chaser",
+  "verification_redlines": [
+    "do not use SystemVerilog-only syntax",
+    "do not use generated testbenches on the stable path",
+    "do not bypass executor-based compile and simulation validation"
+  ]
+}

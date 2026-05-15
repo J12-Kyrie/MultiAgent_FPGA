@@ -1,0 +1,20 @@
+{
+  "checkpoint_summary": {
+    "CHK_RESET_CLEAR": "PASS|Reset sets leds=0001",
+    "CHK_SHIFT_LEFT": "PASS|Shift left 3 times gives 1000",
+    "CHK_SHIFT_RIGHT": "PASS|Shift right 2 times gives 0010",
+    "CHK_WRAP_AROUND": "PASS|Wrap-around from leftmost gives 0001"
+  },
+  "compile_result_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/l0_result.json",
+  "failed_checkpoints": [],
+  "failure_phase": null,
+  "l0_status": "passed",
+  "l1_status": "passed",
+  "missing_checkpoints": [],
+  "module_id": "led_chaser",
+  "promoted_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/promoted",
+  "simulate_result_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/sim/module_run_result.json",
+  "validation_status": "passed",
+  "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser",
+  "workspace_state_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/workspace_state.json"
+}

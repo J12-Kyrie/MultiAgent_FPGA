@@ -1,0 +1,44 @@
+# LED Chaser Design Blueprint
+# Minimal design to validate the blueprint-driven pipeline with non-AES designs.
+
+design:
+  name: led_chaser
+  scope: "4-bit LED chaser with configurable direction"
+  language: verilog
+  autonomous_goal: "Implement and validate a 4-bit LED chaser with direction control."
+  block_width: 4
+  key_width: 1
+  latency_target_cycles: 1
+
+memory_required: false
+
+modules:
+  - id: led_chaser
+    rtl: rtl/led_chaser.v
+    tb: tb/led_chaser_tb.cpp
+    depends_on: []
+    checkpoints:
+      - CHK_RESET_CLEAR
+      - CHK_SHIFT_LEFT
+      - CHK_SHIFT_RIGHT
+      - CHK_WRAP_AROUND
+    integration_role: top
+    vectors: "vectors/led_chaser_kat.txt"
+    criticality: medium
+    checkpoint_contract: "CHECKPOINT|CHK_*|PASS|<detail>"
+    latency_expectation: single_cycle_shift
+    summary: "Implement a 4-bit LED chaser that shifts a lit LED left or right each clock cycle."
+    ports:
+      - {name: clk, direction: input, width: 1, description: "Clock input."}
+      - {name: rst_n, direction: input, width: 1, description: "Active-low reset."}
+      - {name: dir, direction: input, width: 1, description: "Direction: 0=left, 1=right."}
+      - {name: leds, direction: output, width: 4, description: "LED output pattern."}
+    design_goals:
+      - "On reset, leds = 4'b0001."
+      - "Each clock cycle, shift the lit LED in the direction specified by dir."
+      - "Wrap around when the LED reaches the end."
+    vector_format: "Key/value file with dir, cycles, and expected LED patterns."
+    plusargs:
+      - "+vecfile"
+    prohibited_constructs:
+      - "Do not introduce SystemVerilog-only syntax."
