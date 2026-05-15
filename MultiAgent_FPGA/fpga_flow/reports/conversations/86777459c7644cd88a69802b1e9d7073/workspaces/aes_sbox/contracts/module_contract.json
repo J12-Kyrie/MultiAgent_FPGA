@@ -1,0 +1,36 @@
+{
+  "canonical_rtl_targets": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/rtl/aes_sbox.v"
+  ],
+  "canonical_tb_target": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/tb/aes_sbox_tb.cpp",
+  "dependencies": [],
+  "dependency_interfaces": [],
+  "module_id": "aes_sbox",
+  "ports": [
+    {
+      "description": "Input byte to substitute.",
+      "direction": "input",
+      "name": "in_byte",
+      "width": 8
+    },
+    {
+      "description": "Substituted output byte.",
+      "direction": "output",
+      "name": "out_byte",
+      "width": 8
+    }
+  ],
+  "prohibited_constructs": [
+    "Do not introduce SystemVerilog-only syntax.",
+    "Do not rename frozen ports or checkpoint identifiers.",
+    "Do not edit cross-module architecture from a node-local task."
+  ],
+  "required_checkpoints": [
+    "CHK_SBOX_MATCH"
+  ],
+  "summary": "Implement the combinational AES S-box byte substitution.",
+  "writable_targets": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/rtl/aes_sbox.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/tb/aes_sbox_tb.cpp"
+  ]
+}

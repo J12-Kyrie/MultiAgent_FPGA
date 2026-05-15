@@ -1,0 +1,42 @@
+{
+  "accept_condition": "sample key/plaintext when start && !busy",
+  "algorithm": "AES",
+  "block_width": 128,
+  "clock_reset_assumptions": {
+    "clock": "single synchronous rising-edge clock",
+    "reset": "active-low reset for top-level control paths"
+  },
+  "frozen_interfaces": [
+    "clk",
+    "rst_n",
+    "start",
+    "key[127:0]",
+    "plaintext[127:0]",
+    "busy",
+    "done",
+    "ciphertext[127:0]"
+  ],
+  "interface_style": "block_handshake",
+  "key_width": 128,
+  "latency_target_cycles": 11,
+  "microarchitecture": "iterative_10_round",
+  "module_candidates": [
+    "aes_sbox",
+    "aes_key_schedule_128",
+    "aes_round_transform",
+    "aes128_encrypt_core"
+  ],
+  "operation": "encrypt",
+  "output_valid_condition": "done pulse with stable ciphertext",
+  "system_goal": "Autonomously design, implement, validate, repair, and integrate an AES-128 encrypt-only FPGA full-system using block-level handshake and an iterative 10-round microarchitecture.",
+  "timing_targets": {
+    "latency_cycles": 11,
+    "throughput": "one block per transaction"
+  },
+  "variant": "AES-128",
+  "verification_redlines": [
+    "do not use SystemVerilog-only syntax",
+    "do not use generated testbenches on the stable path",
+    "do not bypass executor-based compile and simulation validation"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "checkpoint_contract": "CHECKPOINT|CHK_*|PASS|<detail>",
+  "checkpoint_names": [
+    "CHK_RESET_CLEAR",
+    "CHK_START_ACCEPTED",
+    "CHK_BUSY_ASSERTED",
+    "CHK_DONE_PULSE",
+    "CHK_CIPHERTEXT_MATCH",
+    "CHK_BUSY_DEASSERTED"
+  ],
+  "module_id": "aes128_encrypt_core",
+  "plusargs": [
+    "+profile=rand_small|rand_medium|back_to_back|mid_reset",
+    "+cases",
+    "+seed",
+    "+vecfile"
+  ],
+  "success_rules": [
+    "Emit the required CHECKPOINT lines to simulation.log using the exact frozen contract CHECKPOINT|CHK_*|PASS|<detail>.",
+    "Remain self-checking and deterministic for generated vectors.",
+    "Do not rely on auto-generated testbenches."
+  ],
+  "tb_language": "cpp",
+  "vector_format": "Key/value file with key, plaintext, ciphertext, and optional L2 profiles.",
+  "writable_target": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/tb/aes128_encrypt_core_tb.cpp"
+}

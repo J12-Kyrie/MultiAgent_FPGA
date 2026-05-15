@@ -171,7 +171,7 @@ def get_memory_skill_refs() -> dict[str, SkillRef]:
 
 
 def get_documentation_skill_refs() -> dict[str, SkillRef]:
-    """Return the 6 doc-only skills (used by synthesis.py for ModuleDesignBrief hints)."""
+    """Return the 3 doc-only skills (used by synthesis.py for ModuleDesignBrief hints)."""
     skills_root = _skills_root()
     return {
         'verilator_mcp_setup': SkillRef(
@@ -189,26 +189,11 @@ def get_documentation_skill_refs() -> dict[str, SkillRef]:
             path=skills_root / 'aes_spec_decomposition.md',
             purpose='AES spec decomposition patterns for autonomous SpecIR and PlanDAG synthesis',
         ),
-        'openhands_sdk_bootstrap': SkillRef(
-            name='openhands-sdk-bootstrap',
-            path=skills_root / 'openhands_sdk_bootstrap.md',
-            purpose='SDK bootstrap pattern for Agent, Conversation, Workspace, and LLM',
-        ),
-        'openhands_sdk_mcp_integration': SkillRef(
-            name='openhands-sdk-mcp-integration',
-            path=skills_root / 'openhands_sdk_mcp_integration.md',
-            purpose='OpenHands SDK MCP integration patterns and tool discovery flow',
-        ),
-        'openhands_sdk_observability': SkillRef(
-            name='openhands-sdk-observability',
-            path=skills_root / 'openhands_sdk_observability.md',
-            purpose='Tracing, event, and conversation-level debug guidance',
-        ),
     }
 
 
 def get_all_skill_refs() -> dict[str, SkillRef]:
-    """Return union of all three registries (16 total) for backward-compat callers."""
+    """Return union of all three registries (13 total) for backward-compat callers."""
     return {
         **get_runtime_skill_refs(),
         **get_memory_skill_refs(),

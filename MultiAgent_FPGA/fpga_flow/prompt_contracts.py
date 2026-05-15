@@ -170,10 +170,7 @@ REPAIR_PHASE_ROUND_2_PLUS = PhaseMixin(
     name='repair_round_2_plus',
     lines=(
         'Repair mode is edit-only. Do not run compile, simulation, or receipt-recording commands.',
-        'This is a SUBSEQUENT repair round. A prior repair attempt already modified the file.',
-        'You MAY call file_editor view on the primary_target_file to see its current state before editing.',
-        'Read the error_excerpt and simulation_log_excerpt carefully and locate the specific error in the file before editing.',
-        'Make targeted, minimal edits to fix the specific compile or checkpoint error.',
+        'This is a SUBSEQUENT repair round. Read the error_excerpt and simulation_log_excerpt, locate the error in the file, then make targeted edits.',
         'Do not inspect secondary_target_files before the primary edit is saved.',
         'Revalidation happens in a later validate phase.',
     ),
@@ -193,11 +190,8 @@ def build_memory_directive(design_name: str = 'AES') -> PhaseMixin:
     return PhaseMixin(
         name='memory_consultation',
         lines=(
-            f'Your workspace draft files are pre-populated from verified {design_name} reference memory.',
-            'The === MEMORY === blocks in your system prompt contain the same code that was written to your draft files.',
-            'The draft RTL and TB in your workspace are verified reference implementations.',
-            'The reference code passes all Verilator checkpoints. You may reproduce it verbatim or adapt it.',
-            'If the reference and the patterns skill disagree, the reference memory is authoritative.',
+            f'Your workspace draft files are pre-populated from verified {design_name} reference memory and are authoritative.',
+            'You may reproduce the reference code verbatim or adapt it.',
         ),
     )
 
@@ -207,16 +201,7 @@ def build_repair_memory_directive(design_name: str = 'AES') -> PhaseMixin:
     return PhaseMixin(
         name='repair_memory_consultation',
         lines=(
-            f'Your workspace draft files were originally pre-populated from verified {design_name} reference memory.',
             'The on-disk draft files are the current truth — they may have been modified by prior repair rounds.',
-            'Do not assume the original reference memory matches the current file state.',
-            'Always read the actual file before editing. Base your repair on what is on disk, not on any recalled reference.',
+            'Always read the actual file before editing; do not assume original reference memory matches current file state.',
         ),
     )
-
-
-MEMORY_CONSULTATION_DIRECTIVE = build_memory_directive('AES')
-"""Backward-compatible alias; prefer ``build_memory_directive(design_name)``."""
-
-REPAIR_MEMORY_DIRECTIVE = build_repair_memory_directive('AES')
-"""Backward-compatible alias; prefer ``build_repair_memory_directive(design_name)``."""

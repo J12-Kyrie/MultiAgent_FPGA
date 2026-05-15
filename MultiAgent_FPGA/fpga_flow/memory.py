@@ -102,6 +102,53 @@ def _strip_yaml_frontmatter(text: str) -> str:
     return text[end + 3 :].lstrip('\n')
 
 
+_MODULE_INTERFACE_RE = re.compile(r'module\s+(\w+)\s*\((.*?)\);', re.DOTALL)
+
+
+def _build_summary(content: str) -> str:
+    """Extract structured summary from a memory skill file.
+
+    Returns: interface, design constraints, checkpoints, pitfalls, and
+    strategy hints — without the actual Verilog/C++ code.
+    """
+    verilog = _extract_code_block(content, 'verilog')
+    lines: list[str] = []
+
+    # 1. Module interface from Verilog code block
+    if verilog:
+        iface_match = _MODULE_INTERFACE_RE.search(verilog)
+        if iface_match:
+            module_name = iface_match.group(1)
+            ports_raw = iface_match.group(2).strip()
+            port_list = [p.strip() for p in ports_raw.split(',') if p.strip()]
+            lines.append('## Interface')
+            lines.append(f'Module: {module_name}')
+            if port_list:
+                lines.append('Ports:')
+                for p in port_list:
+                    lines.append(f'  {p}')
+            lines.append('')
+
+    # 2. Key Implementation Notes / Key Notes section
+    key_notes = _extract_section(content, 'Key Implementation Notes')
+    if key_notes is None:
+        key_notes = _extract_section(content, 'Key Notes')
+    if key_notes:
+        lines.append('## Design Guidance')
+        lines.append(key_notes)
+
+    return '\n'.join(lines) if lines else '(no memory summary available)'
+
+
+def _extract_section(content: str, heading: str) -> str | None:
+    """Extract body text of a markdown h1 section by heading name."""
+    pattern = rf'^# {re.escape(heading)}\s*\n(.*?)(?=^# |\Z)'
+    match = re.search(pattern, content, re.MULTILINE | re.DOTALL)
+    if match:
+        return match.group(1).rstrip()
+    return None
+
+
 class MemoryStore:
     """Single source of truth for reference memory retrieval."""
 
@@ -154,7 +201,11 @@ class MemoryStore:
         )
 
     def build_prompt_block(self, module_id: str) -> str:
-        """Return prompt-injectable text with full RTL+TB code for a module."""
+        """Return prompt-injectable text with summary guidance for a module.
+
+        Injects only interface description, design constraints, checkpoints,
+        pitfalls, and strategy hints — NOT the full RTL/TB code.
+        """
         artifacts = self.select(module_id)
         if not artifacts:
             return ''
@@ -164,8 +215,8 @@ class MemoryStore:
             if ref is None:
                 continue
             content = ref.path.read_text(encoding='utf-8')
-            body = _strip_yaml_frontmatter(content)
-            blocks.append(f'=== MEMORY: {ref.name} ===\n{body}\n=== END MEMORY ===')
+            summary = _build_summary(content)
+            blocks.append(f'=== MEMORY: {ref.name} ===\n{summary}\n=== END MEMORY ===')
         return '\n\n'.join(blocks)
 
     def populate_workspace(

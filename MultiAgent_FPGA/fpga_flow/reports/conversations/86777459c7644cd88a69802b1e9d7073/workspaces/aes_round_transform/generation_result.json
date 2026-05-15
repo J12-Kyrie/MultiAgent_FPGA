@@ -1,0 +1,12 @@
+{
+  "cascade_blocked_by": "aes_sbox",
+  "checkpoint_summary": {},
+  "failed_checkpoints": [],
+  "failure_phase": null,
+  "missing_checkpoints": [],
+  "module_id": "aes_round_transform",
+  "promoted": false,
+  "recommended_mode": null,
+  "validation_status": "blocked",
+  "workspace_state": "blocked"
+}

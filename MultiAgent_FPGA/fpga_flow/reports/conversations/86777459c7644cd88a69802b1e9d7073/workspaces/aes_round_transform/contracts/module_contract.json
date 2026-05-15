@@ -1,0 +1,70 @@
+{
+  "canonical_rtl_targets": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/rtl/aes_round_transform.v"
+  ],
+  "canonical_tb_target": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/tb/aes_round_transform_tb.cpp",
+  "dependencies": [
+    "aes_sbox"
+  ],
+  "dependency_interfaces": [
+    "aes_sbox must remain compatible with aes_sbox and its checkpoint contract CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail>."
+  ],
+  "module_id": "aes_round_transform",
+  "ports": [
+    {
+      "description": "Input AES state before the round transform.",
+      "direction": "input",
+      "name": "state_in",
+      "width": 128
+    },
+    {
+      "description": "Round key for AddRoundKey.",
+      "direction": "input",
+      "name": "round_key",
+      "width": 128
+    },
+    {
+      "description": "When asserted, bypass MixColumns.",
+      "direction": "input",
+      "name": "final_round",
+      "width": 1
+    },
+    {
+      "description": "Intermediate state after SubBytes.",
+      "direction": "output",
+      "name": "sub_bytes_state",
+      "width": 128
+    },
+    {
+      "description": "Intermediate state after ShiftRows.",
+      "direction": "output",
+      "name": "shift_rows_state",
+      "width": 128
+    },
+    {
+      "description": "Intermediate state after MixColumns or bypass.",
+      "direction": "output",
+      "name": "mix_columns_state",
+      "width": 128
+    },
+    {
+      "description": "Final state after the round transform.",
+      "direction": "output",
+      "name": "state_out",
+      "width": 128
+    }
+  ],
+  "prohibited_constructs": [
+    "Do not introduce SystemVerilog-only syntax.",
+    "Do not rename frozen ports or checkpoint identifiers.",
+    "Do not edit cross-module architecture from a node-local task."
+  ],
+  "required_checkpoints": [
+    "CHK_ROUND_STATE_MATCH"
+  ],
+  "summary": "Implement one AES round transform with optional final-round bypass.",
+  "writable_targets": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/rtl/aes_round_transform.v",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/tb/aes_round_transform_tb.cpp"
+  ]
+}

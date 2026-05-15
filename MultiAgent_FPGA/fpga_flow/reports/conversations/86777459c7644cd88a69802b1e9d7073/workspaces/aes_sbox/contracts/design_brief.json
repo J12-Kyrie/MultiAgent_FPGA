@@ -1,0 +1,40 @@
+{
+  "checkpoints": [
+    "CHK_SBOX_MATCH"
+  ],
+  "dependency_notes": [],
+  "design_goals": [
+    "Preserve the frozen aes_sbox interface exactly.",
+    "Implement pure combinational substitution with no sequential state.",
+    "Produce CHK_SBOX_MATCH through the self-checking .cpp testbench."
+  ],
+  "implementation_hints": [
+    "Start from the frozen interface and keep these ports stable: in_byte, out_byte.",
+    "Use the declared vectors and required checkpoints as the first acceptance targets: CHK_SBOX_MATCH.",
+    "Emit checkpoints using the exact frozen contract CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail>.",
+    "Verify draft RTL and draft TB produce correct results before the second validation pass.",
+    "Use a combinational lookup or case statement that satisfies these frozen KAT mappings first: 8'h00 -> 8'h63, 8'h53 -> 8'hed, 8'h7c -> 8'h10, 8'hff -> 8'h16."
+  ],
+  "module_id": "aes_sbox",
+  "repair_hints": [
+    "Read generation_result.json, workspace_state.json, and validation_summary.json before editing after a failed validation run.",
+    "Fix the first missing or failed checkpoint before broader refactors.",
+    "When editing a .cpp testbench, emit the exact CHECKPOINT contract CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail> rather than a bare checkpoint name.",
+    "After a failed executor run, make at least one concrete draft RTL or TB edit before rerunning the executor command.",
+    "Use a combinational lookup or case statement that satisfies these frozen KAT mappings first: 8'h00 -> 8'h63, 8'h53 -> 8'hed, 8'h7c -> 8'h10, 8'hff -> 8'h16."
+  ],
+  "skill_paths": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_spec_decomposition.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_module_patterns.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_tb_contracts.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_repair_heuristics.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_verilator_profile.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/verilog_verilator.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/verilator_mcp_setup.md"
+  ],
+  "summary": "Generate aes_sbox for the AES-128 encrypt autonomous full-system.",
+  "vectors": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes_sbox_kat.txt"
+  ],
+  "workspace_strategy": "Generate and edit only draft files under the session workspace. Promote to canonical RTL/TB only after L0 and L1 pass."
+}

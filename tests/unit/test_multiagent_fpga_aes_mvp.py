@@ -201,8 +201,8 @@ def test_deepseek_official_profiles_are_pinned_for_tool_capable_runtime(monkeypa
 
 
 def test_deepseek_official_profiles_record_reasoner_but_do_not_runtime_route_to_it():
-    assert DEEPSEEK_REASONER_MODEL == 'deepseek-reasoner'
-    assert DEEPSEEK_CHAT_MODEL == 'deepseek-chat'
+    assert DEEPSEEK_REASONER_MODEL == 'deepseek-v4-flash'
+    assert DEEPSEEK_CHAT_MODEL == 'deepseek-v4-pro'
 
 
 def test_parse_deepseek_response_extracts_optional_reasoning_fields():
@@ -313,10 +313,7 @@ def test_skill_references_point_to_existing_skill_files():
         'aes_module_patterns',
         'aes_tb_contracts',
         'aes_repair_heuristics',
-        'openhands_sdk_bootstrap',
-        'openhands_sdk_mcp_integration',
         'openhands_sdk_subagent_delegation',
-        'openhands_sdk_observability',
         'aes_memory_sbox',
         'aes_memory_key_schedule',
         'aes_memory_round_transform',
@@ -971,7 +968,7 @@ def test_skill_registries_are_split():
     doc = get_documentation_skill_refs()
     assert len(rt) == 5, f'expected 5 runtime, got {len(rt)}'
     assert len(mem) == 5, f'expected 5 memory, got {len(mem)}'
-    assert len(doc) == 6, f'expected 6 doc-only, got {len(doc)}'
+    assert len(doc) == 3, f'expected 3 doc-only, got {len(doc)}'
     # No overlap
     assert not (set(rt) & set(mem)), 'runtime/memory overlap'
     assert not (set(rt) & set(doc)), 'runtime/doc overlap'

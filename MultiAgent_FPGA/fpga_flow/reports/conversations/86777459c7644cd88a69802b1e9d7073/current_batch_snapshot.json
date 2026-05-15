@@ -1,0 +1,33 @@
+{
+  "batch_id": "generation_layer_1_1_generate_validate",
+  "delegate_requests_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/delegate_requests",
+  "expected_artifacts": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes_sbox/generation_result.json"
+  ],
+  "manual_command_policy": "manual_*_command fields are operator-facing only; runtime dispatch uses structured request fields.",
+  "phase": "generate_validate",
+  "spawn": {
+    "agent_types": [
+      "module_worker__aes_sbox"
+    ],
+    "command": "spawn",
+    "ids": [
+      "module_build__aes_sbox"
+    ]
+  },
+  "tasks": [
+    {
+      "agent_type": "module_worker__aes_sbox",
+      "mode": "generate",
+      "request_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/delegate_requests/generation_layer_1_1_generate_validate__module_build__aes_sbox.json",
+      "worker_id": "module_build__aes_sbox"
+    }
+  ],
+  "workflow_gate_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workflow_gate.json",
+  "workflow_gate_summary": {
+    "decision": "continue",
+    "next_batch_ids": [
+      "generation_layer_1_1_generate_validate"
+    ]
+  }
+}

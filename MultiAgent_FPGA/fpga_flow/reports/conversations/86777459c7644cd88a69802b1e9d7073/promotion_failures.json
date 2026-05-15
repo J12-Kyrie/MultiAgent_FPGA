@@ -1,0 +1,25 @@
+{
+  "count": 4,
+  "failures": [
+    {
+      "module_id": "aes_sbox",
+      "reason": "promotion_record_missing",
+      "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes_sbox"
+    },
+    {
+      "module_id": "aes_key_schedule_128",
+      "reason": "promotion_record_missing",
+      "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes_key_schedule_128"
+    },
+    {
+      "module_id": "aes_round_transform",
+      "reason": "promotion_record_missing",
+      "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes_round_transform"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "reason": "promotion_record_missing",
+      "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core"
+    }
+  ]
+}

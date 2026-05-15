@@ -1,0 +1,16 @@
+{
+  "batches": [
+    {
+      "batch_id": "generation_layer_1_1_generate_validate",
+      "expected_artifacts": [
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes_sbox/generation_result.json"
+      ],
+      "framework_decision": null,
+      "observed_artifacts": [],
+      "pause_reason": "provider_error: ConversationRunError: Conversation run failed for id=528e6b6f-f3a4-437a-9e49-d1f9586ac425: litellm.BadRequestError: OpenAIException - The `reasoning_content` in the thinking mode must be passed back to the API.\n\nConversation logs are stored at: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/528e6b6ff3a4437a9e49d1f9586ac425\n\nTo help debug this issue, please file a bug report at:\n  https://github.com/OpenHands/software-agent-sdk/issues/new\nand attach the conversation logs from the directory above.",
+      "phase": "generate_validate",
+      "status": "interrupted"
+    }
+  ],
+  "count": 1
+}

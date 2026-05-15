@@ -1,0 +1,51 @@
+{
+  "checkpoints": [
+    "CHK_RESET_CLEAR",
+    "CHK_START_ACCEPTED",
+    "CHK_BUSY_ASSERTED",
+    "CHK_DONE_PULSE",
+    "CHK_CIPHERTEXT_MATCH",
+    "CHK_BUSY_DEASSERTED"
+  ],
+  "dependency_notes": [
+    "aes_key_schedule_128 must remain compatible with aes_key_schedule_128 and CHECKPOINT|CHK_ROUNDKEY_MATCH|PASS|<detail>.",
+    "aes_round_transform must remain compatible with aes_round_transform and CHECKPOINT|CHK_ROUND_STATE_MATCH|PASS|<detail>."
+  ],
+  "design_goals": [
+    "Preserve the frozen top-level handshake and signal names exactly.",
+    "Honor the 11-cycle latency target and ignore start while busy.",
+    "Produce the frozen top-level checkpoint set through the self-checking .cpp testbench."
+  ],
+  "implementation_hints": [
+    "Start from the frozen interface and keep these ports stable: clk, rst_n, start, key, plaintext, busy, done, ciphertext.",
+    "Use the declared vectors and required checkpoints as the first acceptance targets: CHK_RESET_CLEAR, CHK_START_ACCEPTED, CHK_BUSY_ASSERTED, CHK_DONE_PULSE, CHK_CIPHERTEXT_MATCH, CHK_BUSY_DEASSERTED.",
+    "Emit checkpoints using the exact frozen contract CHECKPOINT|CHK_*|PASS|<detail>.",
+    "Verify draft RTL and draft TB produce correct results before the second validation pass.",
+    "Preserve compatibility with dependency outputs before optimizing local implementation details.",
+    "Ensure the top-level handshake, latency contract, and checkpoint set are correct before optimizing submodule logic.",
+    "Use these frozen vector anchors from /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt as concrete acceptance targets: key=000102030405060708090a0b0c0d0e0f; plaintext=00112233445566778899aabbccddeeff; ciphertext=69c4e0d86a7b0430d8cdb78070b4c55a; latency_cycles=11."
+  ],
+  "module_id": "aes128_encrypt_core",
+  "repair_hints": [
+    "Read generation_result.json, workspace_state.json, and validation_summary.json before editing after a failed validation run.",
+    "Fix the first missing or failed checkpoint before broader refactors.",
+    "When editing a .cpp testbench, emit the exact CHECKPOINT contract CHECKPOINT|CHK_*|PASS|<detail> rather than a bare checkpoint name.",
+    "After a failed executor run, make at least one concrete draft RTL or TB edit before rerunning the executor command.",
+    "Prioritize the top-level handshake and latency contract before micro-optimizing submodule logic.",
+    "Use these frozen vector anchors from /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt as concrete acceptance targets: key=000102030405060708090a0b0c0d0e0f; plaintext=00112233445566778899aabbccddeeff; ciphertext=69c4e0d86a7b0430d8cdb78070b4c55a; latency_cycles=11."
+  ],
+  "skill_paths": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_spec_decomposition.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_module_patterns.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_tb_contracts.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_repair_heuristics.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/aes_verilator_profile.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/verilog_verilator.md",
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/.openhands/skills/verilator_mcp_setup.md"
+  ],
+  "summary": "Generate aes128_encrypt_core for the AES-128 encrypt autonomous full-system.",
+  "vectors": [
+    "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/vectors/aes128_encrypt_core_kat.txt"
+  ],
+  "workspace_strategy": "Generate and edit only draft files under the session workspace. Promote to canonical RTL/TB only after L0 and L1 pass."
+}

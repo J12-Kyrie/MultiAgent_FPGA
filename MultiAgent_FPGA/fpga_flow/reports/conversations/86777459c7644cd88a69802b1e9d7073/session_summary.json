@@ -1,0 +1,214 @@
+{
+  "batch_plan_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/batch_plan.json",
+  "bootstrap_summary": {
+    "algorithm": "AES",
+    "integration_top": "aes128_encrypt_core",
+    "mcp_servers": [
+      "verilator"
+    ],
+    "nodes": [
+      "aes_sbox",
+      "aes_key_schedule_128",
+      "aes_round_transform",
+      "aes128_encrypt_core"
+    ],
+    "persistence_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations",
+    "repo_root": "/Users/kyrie/Downloads/OpenHands-1.5.0",
+    "runtime_skill_names": [
+      "aes-verilator-profile",
+      "aes-module-patterns",
+      "aes-tb-contracts",
+      "aes-repair-heuristics",
+      "openhands-sdk-subagent-delegation"
+    ],
+    "sdk_package": "openhands.sdk",
+    "synthesis_source": "autonomous",
+    "system_goal": "Autonomously design, implement, validate, repair, and integrate an AES-128 encrypt-only FPGA full-system using block-level handshake and an iterative 10-round microarchitecture.",
+    "variant": "AES-128",
+    "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128"
+  },
+  "brief_generation_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/brief_generation_summary.json",
+  "conversation_id": "86777459-c764-4cd8-8a69-802b1e9d7073",
+  "conversation_summary": {
+    "conversation_id": "86777459-c764-4cd8-8a69-802b1e9d7073",
+    "event_count": 5,
+    "execution_status": "finished_with_fallback",
+    "persistence_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073",
+    "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128"
+  },
+  "delegate_attempted": 0,
+  "delegate_batch_count": 21,
+  "delegate_completed": 0,
+  "delegate_fallback_count": 1,
+  "delegate_fallbacks_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/delegate_fallbacks.json",
+  "delegate_plan_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/delegate_plan.json",
+  "delegate_registrations": [
+    "module_worker__aes_sbox",
+    "module_repair__aes_sbox",
+    "module_worker__aes_key_schedule_128",
+    "module_repair__aes_key_schedule_128",
+    "module_worker__aes_round_transform",
+    "module_repair__aes_round_transform",
+    "module_worker__aes128_encrypt_core",
+    "module_repair__aes128_encrypt_core"
+  ],
+  "delegate_results_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/delegate_results.json",
+  "deterministic_execution": {
+    "conversation_id": "86777459-c764-4cd8-8a69-802b1e9d7073",
+    "focus_module_id": "aes128_encrypt_core",
+    "generation_results_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/generation_results",
+    "integration": {
+      "campaign_count": 0,
+      "result_path": null,
+      "status": "missing"
+    },
+    "integration_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/integration_summary.json",
+    "modules": {
+      "aes128_encrypt_core": {
+        "cascade_blocked_by": "aes_sbox",
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes128_encrypt_core",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "blocked",
+        "workspace_state": "blocked"
+      },
+      "aes_key_schedule_128": {
+        "cascade_blocked_by": "aes_sbox",
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes_key_schedule_128",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "blocked",
+        "workspace_state": "blocked"
+      },
+      "aes_round_transform": {
+        "cascade_blocked_by": "aes_sbox",
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes_round_transform",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "blocked",
+        "workspace_state": "blocked"
+      },
+      "aes_sbox": {
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": "executor_crash",
+        "failure_reason": "execution_conversation_error",
+        "missing_checkpoints": [],
+        "module_id": "aes_sbox",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "failed",
+        "workspace_state": "failed"
+      }
+    },
+    "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_events.json",
+    "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_failures.json"
+  },
+  "execution_mode": "autonomous-generate",
+  "fallback_error": {
+    "message": "Conversation run failed for id=e7ed77cd-555c-4f4c-93c6-a02eca792ef5: litellm.BadRequestError: OpenAIException - The `reasoning_content` in the thinking mode must be passed back to the API.\n\nConversation logs are stored at: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/e7ed77cd555c4f4c93c6a02eca792ef5\n\nTo help debug this issue, please file a bug report at:\n  https://github.com/OpenHands/software-agent-sdk/issues/new\nand attach the conversation logs from the directory above.",
+    "type": "ConversationRunError"
+  },
+  "final_acceptance_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/final_acceptance_summary.json",
+  "focus_module_id": "aes128_encrypt_core",
+  "fragility_memory_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/fragility_memory.json",
+  "generation_plan_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/generation_plan.json",
+  "plan_dag_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/plan_dag.json",
+  "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_events.json",
+  "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_failures.json",
+  "spec_ir_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/spec_ir.json",
+  "state_trace": [
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "ARCHITECTING",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "SPEC_INTAKE",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "PLANNING",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "ARCHITECTING",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_DESIGN",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "PLANNING",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L0",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_DESIGN",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L1",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_L0",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L2_OPTIONAL",
+      "profile": "deepseek_official_fast",
+      "requires_l2": true,
+      "state": "MODULE_L1",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "INTEGRATION_READY",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_L2_OPTIONAL",
+      "subagent_policy": "l2_campaign_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "INTEGRATION_REGRESSION",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "INTEGRATION_READY",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "DONE",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "INTEGRATION_REGRESSION",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": null,
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "DONE",
+      "subagent_policy": "forbidden"
+    }
+  ]
+}

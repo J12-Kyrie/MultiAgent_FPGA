@@ -1,6 +1,0 @@
-{
-  "compile_result": "Compilation Successful\nOutput Directory: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/build\nExecutable: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/build/Vled_chaser\n\nStatistics:\n  Modules: 2\n  Lines: 0\n",
-  "module_id": "led_chaser",
-  "output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/2550b6b5e04249d591a9f671db225984/workspaces/led_chaser/validation/build",
-  "stage": "L0"
-}

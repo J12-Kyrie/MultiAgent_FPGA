@@ -1,5 +1,0 @@
-CHECKPOINT|CHK_RESET_CLEAR|PASS|Reset sets leds=0001
-CHECKPOINT|CHK_SHIFT_LEFT|PASS|Shift left 3 times gives 1000
-CHECKPOINT|CHK_SHIFT_RIGHT|PASS|Shift right 2 times gives 0010
-CHECKPOINT|CHK_WRAP_AROUND|PASS|Wrap-around from leftmost gives 0001
-All tests passed!

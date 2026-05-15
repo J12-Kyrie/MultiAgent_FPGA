@@ -12,8 +12,8 @@ A blueprint-driven multi-agent FPGA design automation framework built on the Ope
 - 11-cycle latency target, single-cycle `done` pulse
 - No L3 (synthesis/implementation), no decryption, no AES-192/256, no streaming interfaces
 - Testbenches are `.cpp` self-checking only — no `.sv`, no auto-generated testbenches
-- LLM backend: DeepSeek official API (`deepseek-chat` via `https://api.deepseek.com`)
-- Env var: `DEEPSEEK_API_KEY`
+- LLM backend: DeepSeek official API (`deepseek-v4-pro` via `https://api.deepseek.com`)
+- Env var: `DEEPSEEK_API_KEY` (set to `sk-844f87f6ca8a4aa0a634059234c86d3c`)
 
 ## Commands
 

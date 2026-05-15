@@ -1,0 +1,21 @@
+{
+  "checkpoint_contract": "CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail>",
+  "checkpoint_names": [
+    "CHK_SBOX_MATCH"
+  ],
+  "module_id": "aes_sbox",
+  "plusargs": [
+    "+profile=rand_small|rand_medium",
+    "+cases",
+    "+seed",
+    "+vecfile"
+  ],
+  "success_rules": [
+    "Emit the required CHECKPOINT lines to simulation.log using the exact frozen contract CHECKPOINT|CHK_SBOX_MATCH|PASS|<detail>.",
+    "Remain self-checking and deterministic for generated vectors.",
+    "Do not rely on auto-generated testbenches."
+  ],
+  "tb_language": "cpp",
+  "vector_format": "Exhaustive byte sweep plus optional vecfile with in_hex/out_hex pairs.",
+  "writable_target": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128/tb/aes_sbox_tb.cpp"
+}

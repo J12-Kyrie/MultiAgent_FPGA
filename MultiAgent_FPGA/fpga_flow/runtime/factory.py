@@ -358,7 +358,7 @@ class SdkAgentFactory:
                 parent_llm,
                 spec=spec,
                 usage_id=usage_id,
-                allowed_tools={'terminal', 'file_editor', 'task_tracker'},
+                allowed_tools={'file_editor', 'task_tracker'},
                 condenser_max_size=10,
             ),
             description=spec.system_prompt,

@@ -1,0 +1,107 @@
+{
+  "batch_history_count": 1,
+  "batch_history_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/batch_history.json",
+  "conversation_id": "86777459-c764-4cd8-8a69-802b1e9d7073",
+  "deterministic_execution": {
+    "conversation_id": "86777459-c764-4cd8-8a69-802b1e9d7073",
+    "focus_module_id": "aes128_encrypt_core",
+    "generation_results_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/generation_results",
+    "integration": {
+      "campaign_count": 0,
+      "result_path": null,
+      "status": "missing"
+    },
+    "integration_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/integration_summary.json",
+    "modules": {
+      "aes128_encrypt_core": {
+        "cascade_blocked_by": "aes_sbox",
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes128_encrypt_core",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "blocked",
+        "workspace_state": "blocked"
+      },
+      "aes_key_schedule_128": {
+        "cascade_blocked_by": "aes_sbox",
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes_key_schedule_128",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "blocked",
+        "workspace_state": "blocked"
+      },
+      "aes_round_transform": {
+        "cascade_blocked_by": "aes_sbox",
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": null,
+        "missing_checkpoints": [],
+        "module_id": "aes_round_transform",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "blocked",
+        "workspace_state": "blocked"
+      },
+      "aes_sbox": {
+        "checkpoint_summary": {},
+        "failed_checkpoints": [],
+        "failure_phase": "executor_crash",
+        "failure_reason": "execution_conversation_error",
+        "missing_checkpoints": [],
+        "module_id": "aes_sbox",
+        "promoted": false,
+        "recommended_mode": null,
+        "validation_status": "failed",
+        "workspace_state": "failed"
+      }
+    },
+    "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_events.json",
+    "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_failures.json"
+  },
+  "fragility_memory_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/fragility_memory.json",
+  "integration_summary_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/integration_summary.json",
+  "plan_dag_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/plan_dag.json",
+  "promotion_events_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_events.json",
+  "promotion_failures_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promotion_failures.json",
+  "spec_ir_path": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/spec_ir.json",
+  "system_goal": "Autonomously design, implement, validate, repair, and integrate an AES-128 encrypt-only FPGA full-system using block-level handshake and an iterative 10-round microarchitecture.",
+  "workflow_gate": {
+    "blocked_modules": [
+      "aes_sbox"
+    ],
+    "cascade_blocked_modules": [
+      "aes_key_schedule_128",
+      "aes_round_transform",
+      "aes128_encrypt_core"
+    ],
+    "completion_status": "blocked",
+    "decision": "blocked",
+    "integration_attempts": 0,
+    "integration_status": "missing",
+    "next_batch_ids": [
+      "generation_layer_1_1_generate_validate"
+    ],
+    "pending_modules": [],
+    "primary_sink": "aes128_encrypt_core",
+    "processed_batch_ids": [],
+    "promoted_modules": [],
+    "protocol_violation": null,
+    "ready_sink_modules": [],
+    "reasons": [
+      "required_module_blocked"
+    ],
+    "required_modules": [
+      "aes_sbox",
+      "aes_key_schedule_128",
+      "aes_round_transform",
+      "aes128_encrypt_core"
+    ]
+  }
+}

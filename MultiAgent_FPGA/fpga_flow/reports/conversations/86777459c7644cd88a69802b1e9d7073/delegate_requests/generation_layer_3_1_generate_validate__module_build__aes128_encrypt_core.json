@@ -1,0 +1,84 @@
+{
+  "batch_id": "generation_layer_3_1_generate_validate",
+  "manual_command_policy": {
+    "manual_executor_command": "Manual reproduction only. Runtime dispatch uses executor_kind plus executor_inputs.",
+    "manual_integration_command": "Manual integration reproduction only. Runtime dispatch uses executor_kind=run_integration plus executor_inputs.",
+    "manual_receipt_command": "Manual repair receipt reproduction only. Runtime dispatch uses preflight_record_repair_edit."
+  },
+  "report_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073",
+  "task": {
+    "agent_type": "module_worker__aes128_encrypt_core",
+    "mode": "generate",
+    "prompt": "Run the generate-and-validate pass for aes128_encrypt_core.\nMode: generate.\nThe draft files are pre-populated from verified memory. Call run_executor to compile and validate.\nIf the observation reports failed validation, read only observation.next_read_paths and stop.\nDo not start the repair loop in this phase.\nDo not edit canonical repository RTL/TB files directly.",
+    "request": {
+      "allowed_progress_actions": [
+        "run_executor"
+      ],
+      "artifact_paths": [
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/contracts/module_contract.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/contracts/testbench_contract.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/contracts/design_brief.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/l0_result.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/sim/module_run_result.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/sim/simulation.log",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/sim/simulation.vcd",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_summary.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_error.json"
+      ],
+      "canonical_targets": [],
+      "cases": null,
+      "contract_paths": {
+        "design_brief": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/contracts/design_brief.json",
+        "module_contract": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/contracts/module_contract.json",
+        "testbench_contract": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/contracts/testbench_contract.json"
+      },
+      "executor_inputs": {
+        "increment_workspace_validation": true,
+        "promoted_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promoted"
+      },
+      "executor_kind": "generate_node",
+      "l2_profile": null,
+      "manual_executor_command": "PYTHONPATH=/Users/kyrie/Downloads/OpenHands-1.5.0 /opt/anaconda3/envs/openhands/bin/python -m MultiAgent_FPGA.fpga_flow generate-node aes128_encrypt_core --workspace-root /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core --strict-validation",
+      "manual_receipt_command": null,
+      "module_id": "aes128_encrypt_core",
+      "next_read_paths": [
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/generation_result.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/workspace_state.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_summary.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_error.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/l0_result.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/sim/module_run_result.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/sim/simulation.log",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/sim/simulation.vcd",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_summary.json",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_error.json"
+      ],
+      "preflight_record_repair_edit": false,
+      "promoted_targets": [
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promoted/aes128_encrypt_core/rtl/aes128_encrypt_core.v",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/promoted/aes128_encrypt_core/tb/aes128_encrypt_core_tb.cpp"
+      ],
+      "repair_budget": 3,
+      "result_paths": {
+        "edit_receipt": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/edit_receipt.json",
+        "generation_result": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/generation_result.json",
+        "repair_request": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/repair_request.json",
+        "validation_error": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_error.json",
+        "validation_summary": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/validation/validation_summary.json",
+        "workspace_state": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/workspace_state.json"
+      },
+      "seed": null,
+      "stage": "MODULE_DESIGN",
+      "vecfile": null,
+      "workflow_gate_hint": "framework_will_schedule_repair_or_block",
+      "working_directory": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/designs/aes128",
+      "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core",
+      "writable_paths": [
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/draft/rtl/aes128_encrypt_core.v",
+        "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/86777459c7644cd88a69802b1e9d7073/workspaces/aes128_encrypt_core/draft/tb/aes128_encrypt_core_tb.cpp"
+      ]
+    },
+    "request_path": null,
+    "worker_id": "module_build__aes128_encrypt_core"
+  }
+}
