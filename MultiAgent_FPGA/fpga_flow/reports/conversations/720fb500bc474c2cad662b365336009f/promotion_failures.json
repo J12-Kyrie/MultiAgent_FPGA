@@ -1,0 +1,10 @@
+{
+  "count": 1,
+  "failures": [
+    {
+      "module_id": "aes128_encrypt_core",
+      "reason": "promotion_record_missing",
+      "workspace_root": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/720fb500bc474c2cad662b365336009f/workspaces/aes128_encrypt_core"
+    }
+  ]
+}

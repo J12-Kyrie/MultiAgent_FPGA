@@ -1,0 +1,12 @@
+{
+  "checkpoint_summary": {},
+  "failed_checkpoints": [],
+  "failure_phase": "executor_crash",
+  "failure_reason": "execution_batch_timeout",
+  "missing_checkpoints": [],
+  "module_id": "aes128_encrypt_core",
+  "promoted": false,
+  "recommended_mode": null,
+  "validation_status": "failed",
+  "workspace_state": "failed"
+}

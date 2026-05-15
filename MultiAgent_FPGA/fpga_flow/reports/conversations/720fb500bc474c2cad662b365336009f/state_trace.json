@@ -1,0 +1,86 @@
+{
+  "conversation_id": "720fb500-bc47-4c2c-ad66-2b365336009f",
+  "entries": [
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "ARCHITECTING",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "SPEC_INTAKE",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "PLANNING",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "ARCHITECTING",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_DESIGN",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "PLANNING",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L0",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_DESIGN",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L1",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_L0",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "MODULE_L2_OPTIONAL",
+      "profile": "deepseek_official_fast",
+      "requires_l2": true,
+      "state": "MODULE_L1",
+      "subagent_policy": "module_worker_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "INTEGRATION_READY",
+      "profile": "deepseek_official_fast",
+      "requires_l2": false,
+      "state": "MODULE_L2_OPTIONAL",
+      "subagent_policy": "l2_campaign_allowed"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "INTEGRATION_REGRESSION",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "INTEGRATION_READY",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": "DONE",
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "INTEGRATION_REGRESSION",
+      "subagent_policy": "forbidden"
+    },
+    {
+      "module_id": "aes128_encrypt_core",
+      "next_state": null,
+      "profile": "deepseek_official_thinking",
+      "requires_l2": false,
+      "state": "DONE",
+      "subagent_policy": "forbidden"
+    }
+  ],
+  "focus_module_id": "aes128_encrypt_core"
+}

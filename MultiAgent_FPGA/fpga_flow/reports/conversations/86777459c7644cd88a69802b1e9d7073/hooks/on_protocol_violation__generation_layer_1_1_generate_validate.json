@@ -1,6 +1,0 @@
-{
-  "batch_id": "generation_layer_1_1_generate_validate",
-  "phase": "generate_validate",
-  "protocol_violation": "execution_conversation_error",
-  "timestamp": "2026-05-15T10:39:22.345364+00:00"
-}

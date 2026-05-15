@@ -1,0 +1,54 @@
+{
+  "content": "## AES-128 FPGA Full-System \u2014 Finalizer Acceptance Summary\n\n**Decision:** `blocked` (terminal)\n\n**3/4 modules promoted** \u2705 \u2014 `aes_sbox`, `aes_key_schedule_128`, and `aes_round_transform` all passed L0 checkpoint validation against known-answer vectors and were promoted with RTL + testbench artifacts.\n\n**1 module failed** \u274c \u2014 `aes128_encrypt_core` (top-level integration wrapper) suffered an `execution_batch_timeout` / `executor_crash`, preventing promotion and blocking full-system integration.\n\n**Integration:** Not reached (0 campaigns, status: `missing`).\n\nThe workflow gate is correctly terminal at `blocked`. No protocol violations or cascade blocks were detected. All 15 processing batches across 3 generation layers completed with the expected outcome given the top-module execution failure.",
+  "event_id": "33dd6aa2-3991-40b0-bc67-aab346342cd9",
+  "finalizer_conversation_id": "b823c0ae-c98d-45e5-96fb-394bc4219a0d",
+  "source": "environment",
+  "status": "blocked",
+  "tool_call_id": "call_00_BlUAwbkr4GAXijpAMmIi0914",
+  "workflow_gate": {
+    "blocked_modules": [
+      "aes128_encrypt_core"
+    ],
+    "cascade_blocked_modules": [],
+    "completion_status": "blocked",
+    "decision": "blocked",
+    "integration_attempts": 0,
+    "integration_status": "missing",
+    "next_batch_ids": [],
+    "pending_modules": [],
+    "primary_sink": "aes128_encrypt_core",
+    "processed_batch_ids": [
+      "generation_layer_1_1_aes_sbox_repair_1",
+      "generation_layer_1_1_aes_sbox_repair_2",
+      "generation_layer_1_1_aes_sbox_revalidate_1",
+      "generation_layer_1_1_aes_sbox_revalidate_2",
+      "generation_layer_1_1_generate_validate",
+      "generation_layer_2_1_aes_key_schedule_128_repair_1",
+      "generation_layer_2_1_aes_key_schedule_128_repair_2",
+      "generation_layer_2_1_aes_key_schedule_128_revalidate_1",
+      "generation_layer_2_1_aes_key_schedule_128_revalidate_2",
+      "generation_layer_2_1_aes_round_transform_repair_1",
+      "generation_layer_2_1_aes_round_transform_repair_2",
+      "generation_layer_2_1_aes_round_transform_revalidate_1",
+      "generation_layer_2_1_aes_round_transform_revalidate_2",
+      "generation_layer_2_1_generate_validate",
+      "generation_layer_3_1_generate_validate"
+    ],
+    "promoted_modules": [
+      "aes_key_schedule_128",
+      "aes_round_transform",
+      "aes_sbox"
+    ],
+    "protocol_violation": null,
+    "ready_sink_modules": [],
+    "reasons": [
+      "required_module_blocked"
+    ],
+    "required_modules": [
+      "aes_sbox",
+      "aes_key_schedule_128",
+      "aes_round_transform",
+      "aes128_encrypt_core"
+    ]
+  }
+}

@@ -1,1 +1,0 @@
-{"id":"1596207c-4a2b-47ca-b663-54d770e31a17","timestamp":"2026-05-15T03:39:22.341989","source":"environment","code":"LLMBadRequestError","detail":"litellm.BadRequestError: OpenAIException - The `reasoning_content` in the thinking mode must be passed back to the API.","kind":"ConversationErrorEvent"}

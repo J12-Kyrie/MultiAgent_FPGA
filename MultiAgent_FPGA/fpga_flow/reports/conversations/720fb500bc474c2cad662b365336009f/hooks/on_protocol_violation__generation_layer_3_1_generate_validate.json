@@ -1,0 +1,6 @@
+{
+  "batch_id": "generation_layer_3_1_generate_validate",
+  "phase": "generate_validate",
+  "protocol_violation": "execution_batch_timeout",
+  "timestamp": "2026-05-15T10:59:25.352821+00:00"
+}

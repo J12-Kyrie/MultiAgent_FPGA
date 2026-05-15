@@ -1,0 +1,6 @@
+{
+  "compile_result": "Compilation Successful\nOutput Directory: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/720fb500bc474c2cad662b365336009f/workspaces/aes_sbox/validation/build\nExecutable: /Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/720fb500bc474c2cad662b365336009f/workspaces/aes_sbox/validation/build/Vaes_sbox\n\nStatistics:\n  Modules: 3\n  Lines: 0\n",
+  "module_id": "aes_sbox",
+  "output_dir": "/Users/kyrie/Downloads/OpenHands-1.5.0/MultiAgent_FPGA/fpga_flow/reports/conversations/720fb500bc474c2cad662b365336009f/workspaces/aes_sbox/validation/build",
+  "stage": "L0"
+}
